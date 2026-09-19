@@ -1,0 +1,6 @@
+{
+  "name": "SummaryHub",
+  "description": "AI-powered content aggregation and multi-tier summarization platform for YouTube, X, Instagram, and news sources.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

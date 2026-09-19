@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.summaryhub.twa",
+      "sha256_cert_fingerprints": [
+        "14:6D:E9:01:F8:85:E1:4E:95:BD:86:19:D8:1E:41:A5:12:38:8D:E0:AB:40:59:BA:41:99:B2:EB:25:94:10:8A"
+      ]
+    }
+  }
+]

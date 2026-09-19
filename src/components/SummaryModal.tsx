@@ -27,7 +27,9 @@ import {
   Building2,
   FileCheck,
   SearchCheck,
-  Award
+  Award,
+  Instagram,
+  Flag
 } from "lucide-react";
 import { SummaryItem, Language, ChatMessage, QuizQuestion } from "../types";
 import { AiService } from "../services/aiService";
@@ -355,6 +357,18 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
               >
                 <span>Original Content</span>
                 <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+
+              <a
+                id="modal-report-support-btn"
+                href="https://www.instagram.com/horizonseer._?stkn=amlld3BudWdwa2l0"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-neutral-400 hover:text-rose-600 transition dark:text-neutral-500 dark:hover:text-rose-400"
+                title="Support or Report issue to Sarfaraz Shah on Instagram (@horizonseer._)"
+              >
+                <Flag className="h-3.5 w-3.5 text-rose-500" />
+                <span className="hidden sm:inline">Report / Support</span>
               </a>
             </div>
           </div>

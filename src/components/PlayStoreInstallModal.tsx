@@ -11,7 +11,8 @@ import {
   Play,
   ArrowRight,
   Layers,
-  Sparkles
+  Sparkles,
+  Instagram
 } from "lucide-react";
 
 interface PlayStoreInstallModalProps {
@@ -282,12 +283,23 @@ export const PlayStoreInstallModal: React.FC<PlayStoreInstallModalProps> = ({
 
         {/* Modal Bottom Actions */}
         <div className="flex items-center justify-between border-t border-neutral-100 bg-neutral-50 px-5 py-3 dark:border-neutral-800 dark:bg-neutral-850">
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-neutral-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-neutral-700 shadow-2xs hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="rounded-xl border border-neutral-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-neutral-700 shadow-2xs hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+            >
+              Close
+            </button>
+            <a
+              href="https://www.instagram.com/horizonseer._?stkn=amlld3BudWdwa2l0"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300"
+            >
+              <Instagram className="h-3.5 w-3.5" />
+              <span>Support / Report</span>
+            </a>
+          </div>
 
           <a
             href={pwaBuilderUrl}

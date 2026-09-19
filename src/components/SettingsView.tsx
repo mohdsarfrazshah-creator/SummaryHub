@@ -11,7 +11,9 @@ import {
   RefreshCw, 
   Database, 
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  Instagram,
+  ExternalLink
 } from "lucide-react";
 import { UserProfile, Language } from "../types";
 
@@ -271,6 +273,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 Package / Install
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Creator & Support / Report Section */}
+        <div className="rounded-2xl border border-rose-200/90 bg-rose-50/50 p-5 dark:border-rose-900/40 dark:bg-rose-950/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white shadow-xs">
+                <Instagram className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
+                  Support or Report
+                </h3>
+                <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-0.5">
+                  SummaryHub is created by <span className="font-semibold text-neutral-900 dark:text-white">Sarfaraz Shah</span>.
+                </p>
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  For support inquiries, issue reports, or feature ideas, reach out directly on Instagram (<span className="font-medium text-rose-600 dark:text-rose-400">@horizonseer._</span>).
+                </p>
+              </div>
+            </div>
+
+            <a
+              id="settings-support-report-link"
+              href="https://www.instagram.com/horizonseer._?stkn=amlld3BudWdwa2l0"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-rose-700 active:scale-98"
+            >
+              <span>Contact on Instagram</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
           </div>
         </div>
 

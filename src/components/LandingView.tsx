@@ -32,8 +32,8 @@ export const LandingView: React.FC<LandingViewProps> = ({
         
         {/* Subtle Pill */}
         <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200/80 bg-white/80 px-3.5 py-1 text-xs font-semibold text-indigo-700 shadow-2xs backdrop-blur-xs dark:border-indigo-900/60 dark:bg-neutral-800/80 dark:text-indigo-300">
-          <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
-          <span>AI-Powered Content Aggregator • Signal Over Noise</span>
+          <img src="/icon.svg" alt="SummaryHub Logo" className="h-4 w-4 object-contain" />
+          <span>SummaryHub • create by Sarfaraz Shah</span>
         </div>
 
         {/* Hero Title */}
@@ -183,6 +183,39 @@ export const LandingView: React.FC<LandingViewProps> = ({
             <h4 className="text-sm font-bold text-neutral-900 dark:text-white mt-1">Key Facts Extraction</h4>
             <p className="text-xs text-neutral-500 mt-1">Names, dates, statistics, decisions isolated.</p>
           </div>
+        </div>
+      </section>
+
+      {/* Creator & Support Footer */}
+      <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-900 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <img src="/icon.svg" alt="SummaryHub Logo" className="h-11 w-11 rounded-xl object-contain shadow-xs" />
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-base font-bold text-neutral-900 dark:text-white">
+                SummaryHub
+              </h3>
+              <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                AI
+              </span>
+            </div>
+            <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+              create by Sarfaraz Shah
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <a
+            id="landing-support-report-btn"
+            href="https://www.instagram.com/horizonseer._?stkn=amlld3BudWdwa2l0"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300"
+          >
+            <Instagram className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+            <span>Support or Report (@horizonseer._)</span>
+          </a>
         </div>
       </section>
     </div>

@@ -12,7 +12,9 @@ import {
   Globe2,
   ExternalLink,
   ChevronRight,
-  Smartphone
+  Smartphone,
+  Instagram,
+  X
 } from "lucide-react";
 import { UserProfile } from "../types";
 
@@ -107,6 +109,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
           isOpenMobile ? "translate-x-0" : "-translate-x-full"
         }`}
       >
+        {/* Brand Header */}
+        <div className="flex items-center justify-between border-b border-neutral-100 p-4 dark:border-neutral-800">
+          <div 
+            onClick={() => handleItemClick("feed")}
+            className="flex cursor-pointer items-center gap-2.5"
+          >
+            <img
+              src="/icon.svg"
+              alt="SummaryHub Logo"
+              className="h-8 w-8 rounded-xl object-contain shadow-xs shadow-indigo-500/20"
+            />
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-base font-bold text-neutral-900 dark:text-white">
+                  Summary<span className="text-indigo-600 dark:text-indigo-400">Hub</span>
+                </span>
+                <span className="rounded-full bg-indigo-50 px-1 py-0.2 text-[9px] font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                  AI
+                </span>
+              </div>
+              <p className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
+                create by Sarfaraz Shah
+              </p>
+            </div>
+          </div>
+          {isOpenMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 md:hidden"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
         {/* Navigation List */}
         <div className="flex-1 overflow-y-auto px-3 py-4">
           <div className="mb-2 px-3 text-[11px] font-semibold tracking-wider text-neutral-400 uppercase dark:text-neutral-500">
@@ -195,6 +232,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </p>
             </div>
           )}
+
+          {/* Support or Report - Sarfaraz Shah Instagram */}
+          <div className="mt-3 rounded-2xl border border-rose-200/80 bg-rose-50/60 p-3 dark:border-rose-900/50 dark:bg-rose-950/30">
+            <a
+              id="sidebar-support-report-link"
+              href="https://www.instagram.com/horizonseer._?stkn=amlld3BudWdwa2l0"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-between text-left text-xs font-semibold text-rose-900 transition hover:text-rose-700 dark:text-rose-200 dark:hover:text-rose-300"
+            >
+              <span className="flex items-center gap-2">
+                <Instagram className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                <span>Support or Report</span>
+              </span>
+              <ExternalLink className="h-3 w-3 text-rose-400" />
+            </a>
+            <p className="mt-1 text-[11px] text-rose-700/80 dark:text-rose-300/80">
+              Direct DM with Sarfaraz Shah on Instagram (@horizonseer._).
+            </p>
+          </div>
 
           {/* User Streak & Saved Time Badge */}
           <div className="mt-4 rounded-xl border border-neutral-200/80 bg-neutral-50/80 p-3 dark:border-neutral-800 dark:bg-neutral-800/40">

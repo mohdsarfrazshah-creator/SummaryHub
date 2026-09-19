@@ -61,12 +61,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Title */}
         <div className="text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-600/30">
-            <Sparkles className="h-5 w-5" />
-          </div>
+          <img
+            src="/icon.svg"
+            alt="SummaryHub Logo"
+            className="mx-auto h-12 w-12 rounded-2xl object-contain shadow-sm shadow-indigo-600/30"
+          />
           <h2 className="mt-3 text-xl font-bold text-neutral-900 dark:text-white">
             {mode === "signup" ? "Join SummaryHub" : "Welcome Back"}
           </h2>
+          <p className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+            create by Sarfaraz Shah
+          </p>
           <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
             {mode === "signup"
               ? "Cut through information overload with personalized AI summaries."

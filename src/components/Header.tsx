@@ -17,7 +17,9 @@ import {
   Flame,
   ShieldCheck,
   RefreshCw,
-  Smartphone
+  Smartphone,
+  Instagram,
+  ExternalLink
 } from "lucide-react";
 import { Language, UserProfile, NotificationItem } from "../types";
 
@@ -90,9 +92,11 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => onNavigate("feed")}
             className="group flex items-center gap-2.5 text-left focus:outline-none"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 text-white shadow-sm shadow-indigo-500/25 transition-transform group-hover:scale-105">
-              <Sparkles className="h-5 w-5" />
-            </div>
+            <img
+              src="/icon.svg"
+              alt="SummaryHub Logo"
+              className="h-9 w-9 rounded-xl object-contain shadow-sm shadow-indigo-500/25 transition-transform group-hover:scale-105"
+            />
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
@@ -102,8 +106,8 @@ export const Header: React.FC<HeaderProps> = ({
                   AI
                 </span>
               </div>
-              <p className="hidden text-[11px] text-neutral-500 dark:text-neutral-400 sm:block">
-                Signal Over Noise
+              <p className="text-[10px] sm:text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+                create by Sarfaraz Shah
               </p>
             </div>
           </button>
@@ -161,6 +165,20 @@ export const Header: React.FC<HeaderProps> = ({
               <span>{isFetchingVerified ? "Verifying..." : "Verified Sync"}</span>
             </button>
           )}
+
+          {/* Support or Report - Sarfaraz Shah Instagram */}
+          <a
+            id="header-support-report-btn"
+            href="https://www.instagram.com/horizonseer._?stkn=amlld3BudWdwa2l0"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-xl border border-rose-200/80 bg-rose-50/70 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 hover:border-rose-300 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 sm:px-3 sm:py-2"
+            title="Support or Report - Contact Sarfaraz Shah on Instagram (@horizonseer._)"
+          >
+            <Instagram className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+            <span className="hidden xl:inline">Support or Report</span>
+            <span className="xl:hidden hidden sm:inline">Support</span>
+          </a>
 
           {/* Quick Summarize URL button */}
           <button
@@ -310,6 +328,20 @@ export const Header: React.FC<HeaderProps> = ({
                     <Settings className="h-4 w-4 text-neutral-400" />
                     <span>Settings</span>
                   </button>
+                  <a
+                    id="user-menu-support-report"
+                    href="https://www.instagram.com/horizonseer._?stkn=amlld3BudWdwa2l0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/50"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Instagram className="h-4 w-4 text-rose-500" />
+                      <span>Support or Report</span>
+                    </span>
+                    <ExternalLink className="h-3.5 w-3.5 text-neutral-400" />
+                  </a>
                 </div>
 
                 <div className="border-t border-neutral-100 pt-1 dark:border-neutral-700/60">

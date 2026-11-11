@@ -1,4 +1,3 @@
-import React from "react";
 import { 
   Sparkles, 
   Youtube, 
@@ -15,6 +14,8 @@ import {
   Globe,
   BookOpen
 } from "lucide-react";
+import { BrandLogo, GlobeSymbol, PenNibSymbol } from "./BrandLogo";
+import { BRAND } from "../config/brand";
 
 interface LandingViewProps {
   onGetStarted: () => void;
@@ -28,21 +29,42 @@ export const LandingView: React.FC<LandingViewProps> = ({
   return (
     <div className="mx-auto max-w-6xl space-y-16 pb-20 pt-4">
       {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl border border-neutral-200/90 bg-gradient-to-b from-indigo-50/50 via-white to-white p-8 text-center shadow-sm dark:border-neutral-800 dark:from-indigo-950/20 dark:via-neutral-900 dark:to-neutral-900 sm:p-14">
+      <section className="relative overflow-hidden rounded-3xl border border-neutral-200/90 bg-gradient-to-b from-stone-100/60 via-white to-white p-8 text-center shadow-sm dark:border-neutral-800 dark:from-neutral-900/50 dark:via-neutral-900 dark:to-neutral-900 sm:p-14">
         
-        {/* Subtle Pill */}
-        <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200/80 bg-white/80 px-3.5 py-1 text-xs font-semibold text-indigo-700 shadow-2xs backdrop-blur-xs dark:border-indigo-900/60 dark:bg-neutral-800/80 dark:text-indigo-300">
-          <img src="/icon.svg" alt="SummaryHub Logo" className="h-4 w-4 object-contain" />
-          <span>SummaryHub • create by Sarfaraz Shah</span>
+        {/* Master Logo Presentation */}
+        <div className="flex flex-col items-center justify-center mb-6">
+          <div className="relative mb-3 group">
+            <GlobeSymbol className="h-16 w-16 sm:h-20 sm:w-20 drop-shadow-md" />
+            <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-neutral-900" />
+          </div>
+
+          <div className="w-full flex items-center justify-center gap-3 mb-1 max-w-xs">
+            <div className="h-px bg-neutral-900/30 dark:bg-neutral-600 flex-1" />
+            <span className="font-serif-title text-sm sm:text-base italic text-neutral-700 dark:text-neutral-300">
+              The
+            </span>
+            <div className="h-px bg-neutral-900/30 dark:bg-neutral-600 flex-1" />
+          </div>
+
+          <h1 className="font-serif-masthead text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-[#0C2340] dark:text-stone-100 uppercase leading-none my-1">
+            WORLD LEDGER
+          </h1>
+
+          <div className="w-full flex items-center justify-center gap-2 my-2.5 max-w-md">
+            <div className="h-[1.5px] bg-red-600 dark:bg-red-500 flex-1" />
+            <div className="text-[#0C2340] dark:text-stone-200 px-1">
+              <PenNibSymbol className="h-4 w-4 fill-current" />
+            </div>
+            <div className="h-[1.5px] bg-red-600 dark:bg-red-500 flex-1" />
+          </div>
+
+          <p className="font-serif-title text-[10px] sm:text-xs tracking-[0.2em] uppercase font-bold text-neutral-800 dark:text-neutral-300">
+            — UNDERSTAND THE NEWS BEHIND THE HEADLINES —
+          </p>
         </div>
 
-        {/* Hero Title */}
-        <h1 className="mx-auto mt-6 max-w-4xl text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white sm:text-5xl sm:leading-tight">
-          Stay Informed in Minutes, Not Hours.
-        </h1>
-
-        <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-neutral-600 dark:text-neutral-300 sm:text-base">
-          SummaryHub automatically condenses long YouTube videos, complex X threads, Instagram updates, and world news wires into 4-tier AI summaries, exam notes, and audio briefings.
+        <p className="mx-auto mt-4 max-w-2xl font-serif-title text-base sm:text-lg leading-relaxed text-neutral-700 dark:text-neutral-300">
+          The World Ledger delivers authoritative global journalism, verified breaking dispatches, and multi-tier executive summaries across world news, policy, science, and markets.
         </p>
 
         {/* CTA Buttons */}
@@ -188,22 +210,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
 
       {/* Creator & Support Footer */}
       <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-xs dark:border-neutral-800 dark:bg-neutral-900 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <img src="/icon.svg" alt="SummaryHub Logo" className="h-11 w-11 rounded-xl object-contain shadow-xs" />
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h3 className="text-base font-bold text-neutral-900 dark:text-white">
-                SummaryHub
-              </h3>
-              <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                AI
-              </span>
-            </div>
-            <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
-              create by Sarfaraz Shah
-            </p>
-          </div>
-        </div>
+        <BrandLogo variant="full" showTagline={true} />
 
         <div className="flex items-center gap-3">
           <a

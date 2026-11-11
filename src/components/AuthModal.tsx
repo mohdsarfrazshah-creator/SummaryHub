@@ -26,20 +26,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   currentUser,
   onLogin,
 }) => {
-  if (!isOpen) return null;
-
   const [mode, setMode] = useState<"login" | "signup">("signup");
   const [name, setName] = useState(currentUser.name || "");
   const [email, setEmail] = useState(currentUser.email || "");
   const [role, setRole] = useState<UserProfile["role"]>(currentUser.role || "student");
   const [password, setPassword] = useState("");
 
+  if (!isOpen) return null;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const updatedUser: UserProfile = {
       ...currentUser,
-      name: name || "SummaryHub Learner",
-      email: email || "user@summaryhub.ai",
+      name: name || "World Ledger Reader",
+      email: email || "reader@worldledger.news",
       role,
     };
     onLogin(updatedUser);
@@ -61,21 +61,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Title */}
         <div className="text-center">
-          <img
-            src="/icon.svg"
-            alt="SummaryHub Logo"
-            className="mx-auto h-12 w-12 rounded-2xl object-contain shadow-sm shadow-indigo-600/30"
-          />
-          <h2 className="mt-3 text-xl font-bold text-neutral-900 dark:text-white">
-            {mode === "signup" ? "Join SummaryHub" : "Welcome Back"}
+          <div className="relative mx-auto inline-block">
+            <img
+              src="/icon.svg"
+              alt="The World Ledger Emblem"
+              className="mx-auto h-14 w-14 rounded-2xl object-contain shadow-lg shadow-indigo-950/20 ring-1 ring-amber-500/30"
+            />
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-neutral-900" />
+          </div>
+          <h2 className="mt-3 font-serif-masthead text-xl font-bold uppercase tracking-tight text-neutral-900 dark:text-white">
+            {mode === "signup" ? "Read The World Ledger" : "Welcome Back"}
           </h2>
-          <p className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
-            create by Sarfaraz Shah
+          <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 font-serif-title">
+            International Edition · Founded by Sarfaraz Shah
           </p>
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 font-serif-title italic">
             {mode === "signup"
-              ? "Cut through information overload with personalized AI summaries."
-              : "Access your saved summaries, daily streak, and reading library."}
+              ? "Understand the news behind the headlines with verified, multi-tier intelligence."
+              : "Access your saved dispatches, daily streak, and reading archive."}
           </p>
         </div>
 

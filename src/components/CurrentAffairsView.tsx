@@ -14,10 +14,13 @@ import {
   Layers,
   ShieldCheck,
   RefreshCw,
-  Zap
+  Zap,
+  Newspaper,
+  Plus,
+  ChevronDown
 } from "lucide-react";
 import { SummaryItem, CurrentAffairsSubCategory, TimeFilter, Language } from "../types";
-import { FeedCard } from "./FeedCard";
+import { FeedCard, FeedCardSkeleton } from "./FeedCard";
 
 interface CurrentAffairsViewProps {
   summaries: SummaryItem[];
@@ -25,9 +28,15 @@ interface CurrentAffairsViewProps {
   onOpenSummary: (summary: SummaryItem, initialTab?: string) => void;
   onToggleSave: (id: string) => void;
   savedIds: string[];
+  readLaterIds?: string[];
+  onToggleReadLater?: (id: string) => void;
+  onMoveToReadLater?: (id: string) => void;
+  onMoveToSaved?: (id: string) => void;
   onOpenAudit?: (summary: SummaryItem) => void;
   onTriggerAutoFetch?: (category?: string) => void;
+  onOpenAddNewsModal?: () => void;
   isFetchingVerified?: boolean;
+  onOpenImagePicker?: (summary: SummaryItem) => void;
 }
 
 export const CurrentAffairsView: React.FC<CurrentAffairsViewProps> = ({
@@ -36,15 +45,26 @@ export const CurrentAffairsView: React.FC<CurrentAffairsViewProps> = ({
   onOpenSummary,
   onToggleSave,
   savedIds,
+  readLaterIds = [],
+  onToggleReadLater,
+  onMoveToReadLater,
+  onMoveToSaved,
   onOpenAudit,
   onTriggerAutoFetch,
+  onOpenAddNewsModal,
   isFetchingVerified = false,
+  onOpenImagePicker,
 }) => {
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>("All");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("daily");
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedCompendium, setCopiedCompendium] = useState(false);
   const [onlyVerified, setOnlyVerified] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  React.useEffect(() => {
+    setVisibleCount(12);
+  }, [selectedSubCategory, timeFilter, searchTerm, onlyVerified]);
 
   const subCategories: (CurrentAffairsSubCategory | "All")[] = [
     "All",
@@ -59,7 +79,7 @@ export const CurrentAffairsView: React.FC<CurrentAffairsViewProps> = ({
 
   // Filter current affairs items
   const filteredSummaries = useMemo(() => {
-    return summaries.filter((item) => {
+    const filtered = summaries.filter((item) => {
       // Must be Current Affairs or News or have currentAffairsCategory
       const isCA = item.category === "Current Affairs" || item.category === "News" || Boolean(item.currentAffairsCategory);
       if (!isCA) return false;
@@ -85,11 +105,21 @@ export const CurrentAffairsView: React.FC<CurrentAffairsViewProps> = ({
 
       return true;
     });
+    return [...filtered].sort((a, b) => {
+      const timeA = new Date(a.publishDate).getTime();
+      const timeB = new Date(b.publishDate).getTime();
+      return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+    });
   }, [summaries, selectedSubCategory, searchTerm, onlyVerified]);
+
+  const displayedSummaries = useMemo(() => {
+    return filteredSummaries.slice(0, visibleCount);
+  }, [filteredSummaries, visibleCount]);
 
   // Export / Copy Exam Compendium
   const handleCopyCompendium = () => {
-    let compendiumText = `# SummaryHub Exam Compendium — ${timeFilter.toUpperCase()} DIGEST\n`;
+    let compendiumText = `# The World Ledger Exam & Policy Compendium — ${timeFilter.toUpperCase()} DIGEST\n`;
+    compendiumText += `Published by: The World Ledger · International Bureau\n`;
     compendiumText += `Generated on: ${new Date().toLocaleDateString()}\n`;
     compendiumText += `Target Categories: National, International, Economy, Sci-Tech, Environment, Sports, Education\n\n`;
 
@@ -97,12 +127,12 @@ export const CurrentAffairsView: React.FC<CurrentAffairsViewProps> = ({
       compendiumText += `## ${idx + 1}. [${item.currentAffairsCategory || item.category}] ${item.title}\n`;
       compendiumText += `Source: ${item.creatorName} | Link: ${item.originalUrl}\n`;
       compendiumText += `### Key Facts:\n`;
-      compendiumText += `- Names: ${item.keyFacts.names.join(", ")}\n`;
-      compendiumText += `- Dates: ${item.keyFacts.dates.join(", ")}\n`;
-      compendiumText += `- Statistics: ${item.keyFacts.statistics.join(", ")}\n`;
-      compendiumText += `- Decisions: ${item.keyFacts.decisions.join(", ")}\n`;
+      compendiumText += `- Names: ${item.keyFacts?.names?.join(", ") || "N/A"}\n`;
+      compendiumText += `- Dates: ${item.keyFacts?.dates?.join(", ") || "N/A"}\n`;
+      compendiumText += `- Statistics: ${item.keyFacts?.statistics?.join(", ") || "N/A"}\n`;
+      compendiumText += `- Decisions: ${item.keyFacts?.decisions?.join(", ") || "N/A"}\n`;
       compendiumText += `### Core Takeaways:\n`;
-      item.quickSummary.forEach((q) => {
+      item.quickSummary.forEach((q: string) => {
         compendiumText += `- ${q}\n`;
       });
       if (item.examRelevance) {
@@ -133,6 +163,18 @@ export const CurrentAffairsView: React.FC<CurrentAffairsViewProps> = ({
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
+            {onOpenAddNewsModal && (
+              <button
+                id="ca-add-news-modal-btn"
+                onClick={onOpenAddNewsModal}
+                className="flex items-center gap-1.5 rounded-xl bg-neutral-900 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
+                title="Publish custom news article or search live wire feeds"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Add News Article</span>
+              </button>
+            )}
+
             {onTriggerAutoFetch && (
               <button
                 id="ca-auto-fetch-btn"
@@ -245,7 +287,20 @@ export const CurrentAffairsView: React.FC<CurrentAffairsViewProps> = ({
       {/* Cards List */}
       {filteredSummaries.length > 0 ? (
         <div className="grid gap-5">
-          {filteredSummaries.map((summary) => (
+          {isFetchingVerified && (
+            <div className="space-y-2 rounded-2xl border border-emerald-200/60 bg-emerald-50/40 p-3.5 dark:border-emerald-900/30 dark:bg-emerald-950/10">
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+                <span>Ingesting and authenticating fresh verified wires...</span>
+              </div>
+              <FeedCardSkeleton />
+            </div>
+          )}
+
+          {displayedSummaries.map((summary) => (
             <FeedCard
               key={summary.id}
               summary={summary}
@@ -253,9 +308,27 @@ export const CurrentAffairsView: React.FC<CurrentAffairsViewProps> = ({
               onOpenSummary={onOpenSummary}
               onToggleSave={onToggleSave}
               isSaved={savedIds.includes(summary.id)}
+              isReadLater={readLaterIds.includes(summary.id)}
+              onToggleReadLater={onToggleReadLater}
+              onMoveToReadLater={onMoveToReadLater}
+              onMoveToSaved={onMoveToSaved}
               onOpenAudit={onOpenAudit}
+              onOpenImagePicker={onOpenImagePicker}
             />
           ))}
+
+          {filteredSummaries.length > visibleCount && (
+            <div className="flex flex-col items-center justify-center pt-2 pb-4">
+              <button
+                id="ca-load-more-btn"
+                onClick={() => setVisibleCount((prev) => Math.min(filteredSummaries.length, prev + 12))}
+                className="inline-flex items-center gap-2 rounded-2xl border border-neutral-300 bg-white px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-neutral-800 shadow-2xs transition hover:bg-neutral-50 hover:border-neutral-400 active:scale-95 dark:border-neutral-700 dark:bg-neutral-850 dark:text-neutral-100 dark:hover:bg-neutral-800"
+              >
+                <ChevronDown className="h-4 w-4 text-emerald-600" />
+                <span>Load More Topics ({filteredSummaries.length - visibleCount} more)</span>
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="rounded-3xl border border-neutral-200 bg-white p-12 text-center dark:border-neutral-800 dark:bg-neutral-900">

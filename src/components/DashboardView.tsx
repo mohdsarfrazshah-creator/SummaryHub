@@ -10,7 +10,8 @@ import {
   Calendar, 
   Award,
   ArrowUpRight,
-  BookOpen
+  BookOpen,
+  ArrowRight
 } from "lucide-react";
 import { UserProfile, SummaryItem, Creator } from "../types";
 
@@ -18,6 +19,7 @@ interface DashboardViewProps {
   user: UserProfile;
   summaries: SummaryItem[];
   savedCount: number;
+  readLaterCount?: number;
   creators: Creator[];
   onNavigate: (view: string) => void;
   onOpenSummary: (summary: SummaryItem) => void;
@@ -27,6 +29,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   user,
   summaries,
   savedCount,
+  readLaterCount = 0,
   creators,
   onNavigate,
   onOpenSummary,
@@ -155,6 +158,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <p className="mt-3 text-[11px] text-neutral-500 dark:text-neutral-400">
             {savedCount} bookmarks stored
           </p>
+        </div>
+      </div>
+
+      {/* Read Later Queue Quick Access Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-violet-200 bg-gradient-to-r from-violet-50/80 via-white to-purple-50/60 p-5 shadow-xs dark:border-violet-900/40 dark:from-violet-950/20 dark:via-neutral-900 dark:to-purple-950/20">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-xs dark:bg-violet-500">
+            <Clock className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-neutral-900 dark:text-white">
+                Read Later Queue
+              </h3>
+              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                {readLaterCount} {readLaterCount === 1 ? "article" : "articles"} queued
+              </span>
+            </div>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Temporary reading list separated from permanent bookmarks with automatic 7-day cleanup.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            id="dashboard-open-read-later-btn"
+            onClick={() => onNavigate("read-later")}
+            className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-violet-700 transition active:scale-95 dark:bg-violet-600 dark:hover:bg-violet-500"
+          >
+            <span>Open Reading Queue</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 

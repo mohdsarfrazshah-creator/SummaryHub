@@ -1,0 +1,21 @@
+{
+  "isClaimed": false,
+  "currentOwner": null,
+  "pendingTransfer": null,
+  "previousOwners": [],
+  "transferHistory": [],
+  "verificationCodes": [],
+  "simulatedEmails": [],
+  "auditLogs": [
+    {
+      "id": "log-init",
+      "action": "INITIAL_CLAIM_REQUEST",
+      "actorEmail": "system",
+      "ipAddress": "127.0.0.1",
+      "userAgent": "The World Ledger System Initialization",
+      "timestamp": "2026-10-20T05:40:00.000Z",
+      "details": "Website ownership management initialized. Awaiting initial super owner claim.",
+      "severity": "info"
+    }
+  ]
+}

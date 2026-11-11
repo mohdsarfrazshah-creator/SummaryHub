@@ -1,5 +1,5 @@
-// SummaryHub Service Worker for Offline & PWA Execution
-const CACHE_NAME = 'summaryhub-cache-v1';
+// The World Ledger Service Worker for Offline & PWA Execution
+const CACHE_NAME = 'worldledger-cache-v1';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

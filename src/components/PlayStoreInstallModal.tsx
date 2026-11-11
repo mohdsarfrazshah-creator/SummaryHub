@@ -28,13 +28,13 @@ export const PlayStoreInstallModal: React.FC<PlayStoreInstallModalProps> = ({
   deferredPrompt,
   onInstallApp,
 }) => {
-  if (!isOpen) return null;
-
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedAsset, setCopiedAsset] = useState(false);
   const [activeTab, setActiveTab] = useState<"instant" | "playstore">("instant");
 
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "https://summaryhub.app";
+  if (!isOpen) return null;
+
+  const appUrl = typeof window !== "undefined" ? window.location.origin : "https://worldledger.app";
   const pwaBuilderUrl = `https://www.pwabuilder.com/?url=${encodeURIComponent(appUrl)}`;
 
   const handleCopyAppUrl = () => {
@@ -117,17 +117,17 @@ export const PlayStoreInstallModal: React.FC<PlayStoreInstallModalProps> = ({
               <div className="rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/80 to-purple-50/40 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/30">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h4 className="text-sm font-bold text-indigo-950 dark:text-indigo-200">
-                      Install SummaryHub App Directly
+                    <h4 className="font-serif-masthead text-sm font-bold uppercase tracking-tight text-neutral-950 dark:text-stone-100">
+                      Install The World Ledger App
                     </h4>
-                    <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-300">
-                      Runs in standalone fullscreen mode without browser navigation bars, with offline caching and instant load times.
+                    <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-300 font-serif-title">
+                      Read worldwide reporting in standalone fullscreen mode without browser chrome, with offline caching and instant load times.
                     </p>
                   </div>
                   <img
                     src="/pwa-192x192.png"
-                    alt="SummaryHub Icon"
-                    className="h-12 w-12 rounded-2xl shadow-md ring-2 ring-indigo-500/20"
+                    alt="The World Ledger Icon"
+                    className="h-12 w-12 rounded-2xl shadow-md ring-2 ring-amber-500/30"
                   />
                 </div>
 

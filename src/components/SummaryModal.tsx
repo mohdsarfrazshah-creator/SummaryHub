@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   X, 
+  ArrowLeft,
+  ChevronLeft,
   Sparkles, 
   CheckCircle2, 
   Calendar, 
@@ -29,21 +31,40 @@ import {
   SearchCheck,
   Award,
   Instagram,
-  Flag
+  Flag,
+  Image as ImageIcon,
+  Download,
+  Play,
+  Pause,
+  RotateCcw,
+  Headphones,
+  FastForward,
+  Rewind,
+  SlidersHorizontal,
+  Camera
 } from "lucide-react";
 import { SummaryItem, Language, ChatMessage, QuizQuestion } from "../types";
 import { AiService } from "../services/aiService";
 import { VerificationBadge } from "./VerificationBadge";
+import { getTopicImageUrl, getTopicGallery } from "../utils/topicImageMatcher";
+import { buildCleanDesignFallback } from "../services/smartImageEngine";
+import { generatePlainTextSummary, downloadFile } from "../utils/exportUtils";
+import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
 
 interface SummaryModalProps {
-  summary: SummaryItem | null;
+  summary: SummaryItem;
   isOpen: boolean;
   onClose: () => void;
   currentLanguage: Language;
   onLanguageChange: (lang: Language) => void;
   isSaved: boolean;
   onToggleSave: (id: string) => void;
+  isReadLater?: boolean;
+  onToggleReadLater?: (id: string) => void;
+  onMoveToSaved?: (id: string) => void;
+  onMoveToReadLater?: (id: string) => void;
   initialTab?: string;
+  onOpenImagePicker?: (summary: SummaryItem) => void;
 }
 
 export const SummaryModal: React.FC<SummaryModalProps> = ({
@@ -54,21 +75,26 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
   onLanguageChange,
   isSaved,
   onToggleSave,
+  isReadLater = false,
+  onToggleReadLater,
+  onMoveToSaved,
+  onMoveToReadLater,
   initialTab = "quick",
+  onOpenImagePicker,
 }) => {
-  if (!isOpen || !summary) return null;
-
   const [activeTab, setActiveTab] = useState<string>(initialTab);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [speechRate, setSpeechRate] = useState(1.0);
+  const speech = useSpeechSynthesis(currentLanguage);
+  const [audioNarrationMode, setAudioNarrationMode] = useState<"quick" | "easy" | "detailed" | "full">("quick");
+  const [showAudioPlayer, setShowAudioPlayer] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [downloadedTxt, setDownloadedTxt] = useState(false);
 
   // Chat State
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => [
     {
       id: "msg-init",
       sender: "ai",
-      text: `Hello! I'm your SummaryHub AI Assistant. Ask me anything about "${summary.title}". You can ask me to explain it simply, give you key takeaways, or prepare exam notes!`,
+      text: `Welcome to The World Ledger. Ask our editorial intelligence desk anything regarding "${summary?.title || "this report"}". You can request clarification, key statistical takeaways, or an examination briefing!`,
       timestamp: "Just now",
     },
   ]);
@@ -82,11 +108,42 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
   const [userAnswers, setUserAnswers] = useState<{ [id: number]: number }>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
+  // Touch gesture handling (swipe down or swipe right to dismiss on mobile)
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const contentBodyRef = useRef<HTMLDivElement>(null);
+
+  // Image fallback state
+  const [modalImageFailed, setModalImageFailed] = useState(false);
+
   useEffect(() => {
     setActiveTab(initialTab);
-    setIsPlayingAudio(false);
+    speech.stop();
     AiService.stopSpeaking();
-  }, [summary.id, initialTab]);
+  }, [summary?.id, initialTab]);
+
+  // Handle Escape key and lock body scroll while summary modal is open
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        speech.stop();
+        AiService.stopSpeaking();
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+      speech.stop();
+      AiService.stopSpeaking();
+    };
+  }, [onClose, speech]);
 
   useEffect(() => {
     if (chatBottomRef.current) {
@@ -95,35 +152,52 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
   }, [chatMessages]);
 
   // Translations
-  const trans = summary.translations?.[currentLanguage as "hi" | "ur"];
-  const displayTitle = trans?.title || summary.title;
-  const displayQuickBullets = trans?.quickSummary || summary.quickSummary;
-  const displayEasy = trans?.easySummary || summary.easySummary;
-  const displayDetailed = trans?.detailedSummary || summary.detailedSummary;
+  const trans = summary?.translations?.[currentLanguage as "hi" | "ur"];
+  const displayTitle = trans?.title || summary?.title || "";
+  const displayQuickBullets = trans?.quickSummary || summary?.quickSummary || [];
+  const displayEasy = trans?.easySummary || summary?.easySummary || "";
+  const displayDetailed = trans?.detailedSummary || summary?.detailedSummary || "";
 
-  // Audio Handler
-  const handleToggleAudio = () => {
-    if (isPlayingAudio) {
-      AiService.stopSpeaking();
-      setIsPlayingAudio(false);
-    } else {
-      setIsPlayingAudio(true);
-      let textToRead = "";
-      if (activeTab === "easy") {
-        textToRead = `${displayTitle}. ${displayEasy}`;
-      } else if (activeTab === "detailed") {
-        textToRead = `${displayTitle}. ${displayDetailed}`;
-      } else {
-        textToRead = `${displayTitle}. ${displayQuickBullets.join(". ")}`;
-      }
-
-      AiService.speak(
-        textToRead,
-        currentLanguage,
-        () => setIsPlayingAudio(false),
-        speechRate
-      );
+  // Build spoken text based on selected depth/tab
+  const getAudioNarrationText = (mode: "quick" | "easy" | "detailed" | "full" = audioNarrationMode) => {
+    const creatorIntro = summary.creatorName ? `Reporting from ${summary.creatorName}. ` : "";
+    if (mode === "easy") {
+      return `${displayTitle}. ${creatorIntro}${displayEasy}`;
     }
+    if (mode === "detailed") {
+      return `${displayTitle}. ${creatorIntro}${displayDetailed}`;
+    }
+    if (mode === "full") {
+      const stats = summary.keyFacts?.statistics?.length
+        ? `Key statistics: ${summary.keyFacts.statistics.join(", ")}. `
+        : "";
+      return `${displayTitle}. ${creatorIntro}Core Takeaways: ${displayQuickBullets.join(". ")}. Plain Language Explanation: ${displayEasy}. Detailed Analysis: ${displayDetailed}. ${stats}`;
+    }
+    // Default: "quick"
+    return `${displayTitle}. ${creatorIntro}Key Takeaways: ${displayQuickBullets.join(". ")}`;
+  };
+
+  // 'Listen to Article' audio narration trigger
+  const handleListenToArticle = (forcedMode?: "quick" | "easy" | "detailed" | "full") => {
+    const mode = forcedMode || (activeTab === "easy" || activeTab === "detailed" ? (activeTab as "easy" | "detailed") : audioNarrationMode);
+    if (forcedMode) {
+      setAudioNarrationMode(forcedMode);
+    }
+    setShowAudioPlayer(true);
+
+    if (speech.isPlaying) {
+      speech.pause();
+    } else if (speech.isPaused) {
+      speech.resume();
+    } else {
+      const textToRead = getAudioNarrationText(mode);
+      speech.speak(textToRead, currentLanguage);
+    }
+  };
+
+  // Alias for backward compatibility
+  const handleToggleAudio = () => {
+    handleListenToArticle();
   };
 
   // Copy Summary text
@@ -206,11 +280,71 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
     return score;
   };
 
+
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now(),
+      };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current || e.touches.length !== 1) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - touchStartRef.current.x;
+    const diffY = currentY - touchStartRef.current.y;
+
+    const isScrolledToTop = !contentBodyRef.current || contentBodyRef.current.scrollTop <= 8;
+
+    // Allow swipe down if at the top of content
+    const isPullingDown = diffY > 0 && isScrolledToTop;
+    // Allow swipe right if horizontal movement exceeds vertical
+    const isSwipingRight = diffX > 0 && diffX > Math.abs(diffY) * 1.25;
+
+    if (isPullingDown || isSwipingRight) {
+      setIsDragging(true);
+      setDragOffset({
+        x: isSwipingRight ? Math.max(0, diffX) : 0,
+        y: isPullingDown ? Math.max(0, diffY) : 0,
+      });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartRef.current) return;
+    // If pulled down > 70px or swiped right > 85px, dismiss modal
+    if (dragOffset.y > 70 || dragOffset.x > 85) {
+      speech.stop();
+      AiService.stopSpeaking();
+      onClose();
+    }
+    setIsDragging(false);
+    setDragOffset({ x: 0, y: 0 });
+    touchStartRef.current = null;
+  };
+
+  const [modalImageSrc, setModalImageSrc] = useState<string>(() => summary?.thumbnailUrl || getTopicImageUrl(summary));
+
+  useEffect(() => {
+    setModalImageFailed(false);
+    if (summary) {
+      setModalImageSrc(summary.thumbnailUrl || getTopicImageUrl(summary));
+    }
+  }, [summary?.id, summary?.thumbnailUrl]);
+
+  if (!isOpen || !summary) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
       {/* Backdrop */}
       <div 
         onClick={() => {
+          speech.stop();
           AiService.stopSpeaking();
           onClose();
         }}
@@ -218,25 +352,61 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
       />
 
       {/* Modal Container */}
-      <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-800 dark:bg-neutral-900">
+      <div 
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        style={{
+          transform: (dragOffset.x > 0 || dragOffset.y > 0)
+            ? `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0)`
+            : undefined,
+          transition: isDragging ? "none" : "transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease-out",
+          opacity: isDragging ? Math.max(0.6, 1 - (dragOffset.y + dragOffset.x) / 350) : 1,
+        }}
+        className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-800 dark:bg-neutral-900"
+      >
+        {/* Mobile Swipe Handle Indicator */}
+        <div className="flex sm:hidden justify-center pt-2 pb-1 bg-white dark:bg-neutral-900 shrink-0">
+          <div 
+            className="h-1.5 w-12 rounded-full bg-neutral-300 dark:bg-neutral-700 active:bg-indigo-500 transition-colors"
+            title="Swipe down or right to dismiss" 
+          />
+        </div>
         
         {/* Modal Top Header */}
-        <div className="flex items-start justify-between border-b border-neutral-200/80 px-5 py-4 dark:border-neutral-800">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2 border-b border-neutral-200/80 px-4 py-3 sm:px-5 sm:py-4 dark:border-neutral-800">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            {/* Back / Cancel Summary Button */}
+            <button
+              id="modal-back-btn"
+              onClick={() => {
+                speech.stop();
+                AiService.stopSpeaking();
+                onClose();
+              }}
+              title="Back to articles (or press Esc)"
+              aria-label="Back to articles"
+              className="flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 shadow-2xs hover:bg-neutral-100 hover:text-neutral-900 active:scale-95 dark:border-neutral-700/80 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 shrink-0 transition"
+            >
+              <ArrowLeft className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              <span className="hidden xs:inline sm:inline">Back</span>
+            </button>
+
             <img
               src={summary.creatorAvatar}
               alt={summary.creatorName}
-              className="h-10 w-10 rounded-full object-cover ring-2 ring-indigo-500/20"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full object-cover ring-2 ring-indigo-500/20 shrink-0"
             />
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate max-w-[120px] sm:max-w-[200px]">
                   {summary.creatorName}
                 </span>
                 <span className="rounded-md bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 uppercase dark:bg-neutral-800 dark:text-neutral-300">
                   {summary.platform}
                 </span>
-                <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                <span className="hidden sm:inline-block rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
                   {summary.category}
                 </span>
                 <VerificationBadge
@@ -246,7 +416,7 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
                   showScore={true}
                 />
               </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 truncate">
                 Published {new Date(summary.publishDate).toLocaleDateString()} • {summary.readingTimeMinutes} min read
               </p>
             </div>
@@ -272,7 +442,24 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
               ))}
             </div>
 
-            {/* Save Button */}
+            {/* Read Later Queue Button */}
+            {onToggleReadLater && (
+              <button
+                id={`modal-read-later-btn-${summary.id}`}
+                onClick={() => onToggleReadLater(summary.id)}
+                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                  isReadLater
+                    ? "bg-violet-100 text-violet-700 dark:bg-violet-950/80 dark:text-violet-300"
+                    : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                }`}
+                title={isReadLater ? "In Read Later Queue (7d auto-cleanup)" : "Add to Read Later Queue (7-day temporary list)"}
+              >
+                <Clock className={`h-4 w-4 ${isReadLater ? "fill-violet-600/30 text-violet-600 dark:text-violet-400" : ""}`} />
+                <span className="hidden sm:inline">{isReadLater ? "In Queue" : "Read Later"}</span>
+              </button>
+            )}
+
+            {/* Permanent Save Bookmark Button */}
             <button
               id={`modal-save-btn-${summary.id}`}
               onClick={() => onToggleSave(summary.id)}
@@ -281,19 +468,42 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
                   ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400"
                   : "text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
               }`}
-              title={isSaved ? "Saved in library" : "Save summary"}
+              title={isSaved ? "Saved permanently in library" : "Save permanently to bookmarks"}
             >
               <Bookmark className={`h-4 w-4 ${isSaved ? "fill-current" : ""}`} />
             </button>
 
-            {/* Close */}
+            {/* Download Offline Text Summary Button */}
+            <button
+              id={`modal-download-txt-btn-${summary.id}`}
+              onClick={() => {
+                const txt = generatePlainTextSummary([summary]);
+                const cleanTitle = summary.title.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "_");
+                downloadFile(txt, `WorldLedger-${cleanTitle}-offline.txt`, "text/plain");
+                setDownloadedTxt(true);
+                setTimeout(() => setDownloadedTxt(false), 2000);
+              }}
+              className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 transition"
+              title="Download this summary as a text file for offline reading"
+            >
+              {downloadedTxt ? (
+                <Check className="h-4 w-4 text-emerald-600" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+            </button>
+
+            {/* Close / Cancel Button */}
             <button
               id="modal-close-btn"
               onClick={() => {
+                speech.stop();
                 AiService.stopSpeaking();
                 onClose();
               }}
-              className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+              title="Close summary and return to previous page (Esc)"
+              aria-label="Close summary"
+              className="flex items-center gap-1 rounded-xl p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 active:scale-95 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 transition"
             >
               <X className="h-5 w-5" />
             </button>
@@ -302,77 +512,300 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
 
         {/* Modal Subheader: Title & Audio Narration Bar */}
         <div className="border-b border-neutral-100 bg-neutral-50/50 px-5 py-3 dark:border-neutral-800/80 dark:bg-neutral-800/20">
-          <h1 className="text-base font-bold text-neutral-900 dark:text-white sm:text-xl">
-            {displayTitle}
-          </h1>
+          <div className="flex flex-col gap-2">
+            <h1 className="text-base font-bold text-neutral-900 dark:text-white sm:text-xl leading-snug">
+              {displayTitle}
+            </h1>
 
-          {/* Audio Bar & Copy Bar */}
-          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <button
-                id="modal-listen-audio-btn"
-                onClick={handleToggleAudio}
-                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold transition ${
-                  isPlayingAudio
-                    ? "bg-amber-500 text-white shadow-xs"
-                    : "bg-neutral-200/80 text-neutral-700 hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-200"
-                }`}
-              >
-                {isPlayingAudio ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-                <span>{isPlayingAudio ? "Stop Reading" : "Listen Aloud"}</span>
-              </button>
+            {/* Audio Bar & Action Links */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs">
+              <div className="flex items-center gap-2">
+                {/* Primary 'Listen to Article' Button */}
+                <button
+                  id="modal-listen-to-article-btn"
+                  onClick={() => handleListenToArticle()}
+                  className={`group flex items-center gap-2 rounded-xl px-3.5 py-1.5 font-semibold transition shadow-xs ${
+                    speech.isPlaying
+                      ? "bg-amber-500 text-white shadow-amber-500/20 ring-2 ring-amber-400"
+                      : speech.isPaused
+                      ? "bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 ring-1 ring-amber-500"
+                      : "bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 shadow-indigo-600/20"
+                  }`}
+                  title="Listen to AI-generated summary aloud for users on the go"
+                >
+                  {speech.isPlaying ? (
+                    <>
+                      {/* Animated Audio Equalizer Bars */}
+                      <div className="flex items-center gap-0.5 h-3.5">
+                        <span className="w-0.5 h-2.5 bg-white rounded-full animate-pulse" />
+                        <span className="w-0.5 h-3.5 bg-white rounded-full animate-bounce" style={{ animationDelay: "120ms" }} />
+                        <span className="w-0.5 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: "240ms" }} />
+                        <span className="w-0.5 h-3 bg-white rounded-full animate-bounce" style={{ animationDelay: "60ms" }} />
+                      </div>
+                      <span>Listening to Article</span>
+                    </>
+                  ) : speech.isPaused ? (
+                    <>
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      <span>Resume Listening</span>
+                    </>
+                  ) : (
+                    <>
+                      <Headphones className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+                      <span>Listen to Article</span>
+                    </>
+                  )}
+                </button>
 
-              {isPlayingAudio && (
-                <div className="flex items-center gap-1 text-[11px] text-neutral-500">
-                  <span>Speed:</span>
-                  {[1.0, 1.25, 1.5].map((rate) => (
-                    <button
-                      key={rate}
-                      onClick={() => setSpeechRate(rate)}
-                      className={`rounded px-1.5 py-0.5 ${speechRate === rate ? "bg-indigo-600 text-white font-bold" : "bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300"}`}
-                    >
-                      {rate}x
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                {/* Secondary Stop Button if active */}
+                {(speech.isPlaying || speech.isPaused) && (
+                  <button
+                    id="modal-stop-audio-btn"
+                    onClick={() => speech.stop()}
+                    className="flex items-center gap-1 rounded-xl border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 transition"
+                    title="Stop playback"
+                  >
+                    <VolumeX className="h-3.5 w-3.5 text-rose-500" />
+                    <span className="hidden sm:inline">Stop</span>
+                  </button>
+                )}
 
-            <div className="flex items-center gap-2">
-              <button
-                id="modal-copy-summary-btn"
-                onClick={handleCopyText}
-                className="flex items-center gap-1 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-              >
-                {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copied ? "Copied!" : "Copy Text"}</span>
-              </button>
+                {/* Toggle Full Audio Controls Panel */}
+                <button
+                  id="modal-toggle-audio-player-btn"
+                  onClick={() => setShowAudioPlayer(!showAudioPlayer)}
+                  className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium transition ${
+                    showAudioPlayer || speech.isPlaying || speech.isPaused
+                      ? "bg-neutral-200/80 text-neutral-800 dark:bg-neutral-700 dark:text-neutral-200"
+                      : "text-neutral-500 hover:bg-neutral-200/60 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  }`}
+                  title="Toggle Audio Player Bar & Speech Options"
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{showAudioPlayer ? "Controls" : "Audio Controls"}</span>
+                </button>
+              </div>
 
-              <a
-                id="modal-original-source-btn"
-                href={summary.originalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-              >
-                <span>Original Content</span>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
+              {/* Right utility links */}
+              <div className="flex items-center gap-2">
+                <button
+                  id="modal-copy-summary-btn"
+                  onClick={handleCopyText}
+                  className="flex items-center gap-1 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                >
+                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                  <span>{copied ? "Copied!" : "Copy Text"}</span>
+                </button>
 
-              <a
-                id="modal-report-support-btn"
-                href="https://www.instagram.com/horizonseer._?stkn=amlld3BudWdwa2l0"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-neutral-400 hover:text-rose-600 transition dark:text-neutral-500 dark:hover:text-rose-400"
-                title="Support or Report issue to Sarfaraz Shah on Instagram (@horizonseer._)"
-              >
-                <Flag className="h-3.5 w-3.5 text-rose-500" />
-                <span className="hidden sm:inline">Report / Support</span>
-              </a>
+                <a
+                  id="modal-original-source-btn"
+                  href={summary.originalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                >
+                  <span>Original Content</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+
+                <a
+                  id="modal-report-support-btn"
+                  href="https://www.instagram.com/horizonseer._?stkn=amlld3BudWdwa2l0"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-neutral-400 hover:text-rose-600 transition dark:text-neutral-500 dark:hover:text-rose-400"
+                  title="Support or Report issue to Sarfaraz Shah on Instagram (@horizonseer._)"
+                >
+                  <Flag className="h-3.5 w-3.5 text-rose-500" />
+                  <span className="hidden sm:inline">Report / Support</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Dedicated "Listen on the Go" Audio Player Floating Bar */}
+        {(showAudioPlayer || speech.isPlaying || speech.isPaused) && (
+          <div className="border-b border-indigo-100 bg-gradient-to-r from-indigo-50/90 via-purple-50/60 to-white px-5 py-3 dark:border-indigo-950 dark:from-indigo-950/40 dark:via-purple-950/20 dark:to-neutral-900">
+            <div className="flex flex-col gap-2.5">
+              {/* Row 1: Summary mode selector & Player Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                {/* Narration Mode Selector */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400">
+                    Read Depth:
+                  </span>
+                  <div className="flex items-center rounded-lg border border-neutral-200/80 bg-white/80 p-0.5 dark:border-neutral-700 dark:bg-neutral-800">
+                    {[
+                      { id: "quick", label: "Quick Takeaways" },
+                      { id: "easy", label: "Easy (100w)" },
+                      { id: "detailed", label: "Detailed (300w)" },
+                      { id: "full", label: "Full Briefing" },
+                    ].map((mode) => (
+                      <button
+                        key={mode.id}
+                        id={`audio-mode-btn-${mode.id}`}
+                        onClick={() => {
+                          setAudioNarrationMode(mode.id as any);
+                          if (speech.isPlaying || speech.isPaused) {
+                            handleListenToArticle(mode.id as any);
+                          }
+                        }}
+                        className={`rounded-md px-2 py-0.5 text-[11px] font-medium transition ${
+                          audioNarrationMode === mode.id
+                            ? "bg-indigo-600 text-white font-semibold shadow-2xs"
+                            : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Center Audio Action Controls */}
+                <div className="flex items-center gap-1.5">
+                  {/* Skip Previous Sentence */}
+                  <button
+                    id="audio-prev-btn"
+                    onClick={speech.skipPrevious}
+                    disabled={speech.currentSentenceIndex === 0}
+                    className="rounded-lg p-1.5 text-neutral-600 hover:bg-neutral-200/60 disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-neutral-800 transition"
+                    title="Previous sentence"
+                  >
+                    <Rewind className="h-3.5 w-3.5" />
+                  </button>
+
+                  {/* Play / Pause Toggle */}
+                  <button
+                    id="audio-play-pause-btn"
+                    onClick={() => {
+                      if (speech.isPlaying) {
+                        speech.pause();
+                      } else if (speech.isPaused) {
+                        speech.resume();
+                      } else {
+                        handleListenToArticle();
+                      }
+                    }}
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs active:scale-95 transition"
+                    title={speech.isPlaying ? "Pause" : "Play"}
+                  >
+                    {speech.isPlaying ? (
+                      <Pause className="h-3.5 w-3.5 fill-current" />
+                    ) : (
+                      <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
+                    )}
+                  </button>
+
+                  {/* Skip Next Sentence */}
+                  <button
+                    id="audio-next-btn"
+                    onClick={speech.skipNext}
+                    disabled={speech.totalSentences === 0 || speech.currentSentenceIndex >= speech.totalSentences - 1}
+                    className="rounded-lg p-1.5 text-neutral-600 hover:bg-neutral-200/60 disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-neutral-800 transition"
+                    title="Next sentence"
+                  >
+                    <FastForward className="h-3.5 w-3.5" />
+                  </button>
+
+                  {/* Replay From Beginning */}
+                  <button
+                    id="audio-replay-btn"
+                    onClick={speech.replay}
+                    className="rounded-lg p-1.5 text-neutral-600 hover:bg-neutral-200/60 dark:text-neutral-300 dark:hover:bg-neutral-800 transition"
+                    title="Replay from start"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </button>
+
+                  {/* Stop */}
+                  <button
+                    id="audio-stop-btn"
+                    onClick={speech.stop}
+                    className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-950/40 transition"
+                    title="Stop reading"
+                  >
+                    <VolumeX className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* Speed & Voice options */}
+                <div className="flex items-center gap-2">
+                  {/* Speed buttons */}
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-[10px] text-neutral-500 font-medium">Speed:</span>
+                    {[0.75, 1.0, 1.25, 1.5, 2.0].map((rate) => (
+                      <button
+                        key={rate}
+                        id={`audio-speed-${rate}`}
+                        onClick={() => speech.setRate(rate)}
+                        className={`rounded px-1.5 py-0.5 text-[10px] transition ${
+                          speech.rate === rate
+                            ? "bg-indigo-600 font-bold text-white shadow-2xs"
+                            : "bg-white/80 text-neutral-600 hover:bg-neutral-200/60 dark:bg-neutral-800 dark:text-neutral-300"
+                        }`}
+                      >
+                        {rate}x
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Available Voices Dropdown (if multiple voices) */}
+                  {speech.voices.length > 1 && (
+                    <select
+                      id="audio-voice-select"
+                      aria-label="Audio voice selector"
+                      value={speech.selectedVoice?.voiceURI || ""}
+                      onChange={(e) => {
+                        const voice = speech.voices.find((v) => v.voiceURI === e.target.value) || null;
+                        speech.setSelectedVoice(voice);
+                      }}
+                      className="rounded-md border border-neutral-200 bg-white/90 px-1.5 py-0.5 text-[10px] text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 max-w-[110px] truncate"
+                    >
+                      {speech.voices
+                        .filter((v) =>
+                          v.lang.toLowerCase().startsWith(currentLanguage === "hi" ? "hi" : currentLanguage === "ur" ? "ur" : "en")
+                        )
+                        .slice(0, 8)
+                        .map((v) => (
+                          <option key={v.voiceURI} value={v.voiceURI}>
+                            {v.name.replace(/Google|Microsoft|Apple|Desktop|Natural/gi, "").trim() || v.name}
+                          </option>
+                        ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 2: Reading Progress & Live Caption Subtitle */}
+              {speech.totalSentences > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px] font-semibold text-neutral-500 dark:text-neutral-400">
+                    <span className="flex items-center gap-1.5">
+                      <Volume2 className="h-3 w-3 text-indigo-500 animate-pulse" />
+                      <span>Sentence {speech.currentSentenceIndex + 1} of {speech.totalSentences}</span>
+                    </span>
+                    <span>{speech.progressPercent}% Completed</span>
+                  </div>
+
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200/80 dark:bg-neutral-800">
+                    <div
+                      className="h-full bg-indigo-600 transition-all duration-300 dark:bg-indigo-500"
+                      style={{ width: `${speech.progressPercent}%` }}
+                    />
+                  </div>
+
+                  {speech.currentSentence && (
+                    <div className="rounded-lg bg-white/70 px-2.5 py-1 text-[11px] italic text-neutral-700 dark:bg-neutral-850 dark:text-neutral-300 border border-neutral-200/50 dark:border-neutral-800 line-clamp-2">
+                      🗣️ "{speech.currentSentence}"
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Tab Navigation Bar */}
         <div className="flex border-b border-neutral-200 overflow-x-auto bg-white px-5 dark:border-neutral-800 dark:bg-neutral-900">
@@ -410,12 +843,77 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
         </div>
 
         {/* Content Body Area */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+        <div ref={contentBodyRef} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
+          {/* Article Topic Banner Header */}
+          {modalImageSrc && !modalImageFailed && (activeTab === "quick" || activeTab === "easy" || activeTab === "detailed") && (
+            <div className="relative aspect-video max-h-52 w-full overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800 shadow-xs mb-4">
+              <img
+                src={modalImageSrc}
+                alt={displayTitle}
+                referrerPolicy="no-referrer"
+                decoding="async"
+                className="h-full w-full object-cover"
+                loading="lazy"
+                onError={() => {
+                  const fallback = buildCleanDesignFallback(summary.title, summary.currentAffairsCategory || summary.category);
+                  if (modalImageSrc !== fallback) {
+                    setModalImageSrc(fallback);
+                  } else {
+                    setModalImageFailed(true);
+                  }
+                }}
+              />
+              {(() => {
+                const isPublisherPhoto = summary?.imageSource === "publisher" || (Boolean(summary?.thumbnailUrl && summary.thumbnailUrl.startsWith("http")) && summary?.imageType === "photo");
+                return (
+                  <div 
+                    className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg bg-black/80 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-xs border border-white/10"
+                    title={isPublisherPhoto ? `Verified photo from ${summary?.creatorName}` : "The World Ledger Editorial Dispatch Card"}
+                  >
+                    {isPublisherPhoto ? (
+                      <>
+                        <Camera className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>Photo • {summary?.creatorName || "Publisher Wire"}</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-3.5 w-3.5 text-indigo-400" />
+                        <span>Editorial Card • {summary?.currentAffairsCategory || summary?.category}</span>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+              {onOpenImagePicker && (
+                <button
+                  type="button"
+                  onClick={() => onOpenImagePicker(summary)}
+                  className="absolute top-2.5 right-2.5 flex items-center gap-1.5 rounded-lg bg-black/70 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-black/90 backdrop-blur-xs shadow-xs"
+                  title="Customize or swap this article's topic image"
+                >
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  <span>Customize Image</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* TAB 1: QUICK SUMMARY (3-5 Bullets) */}
           {activeTab === "quick" && (
             <div className="space-y-4">
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 text-xs text-indigo-800 dark:border-indigo-900/30 dark:bg-indigo-950/30 dark:text-indigo-300">
-                💡 <strong>Quick Summary</strong> — Understand the 3-5 core takeaways in under 60 seconds.
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 text-xs text-indigo-800 dark:border-indigo-900/30 dark:bg-indigo-950/30 dark:text-indigo-300">
+                <div>
+                  💡 <strong>Quick Summary</strong> — Understand the 3-5 core takeaways in under 60 seconds.
+                </div>
+                <button
+                  id="tab-listen-quick-btn"
+                  onClick={() => handleListenToArticle("quick")}
+                  className="flex items-center gap-1.5 rounded-lg bg-indigo-600/10 hover:bg-indigo-600 hover:text-white px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-600 dark:hover:text-white transition"
+                  title="Listen to Quick Summary takeaways aloud"
+                >
+                  <Headphones className="h-3 w-3" />
+                  <span>{speech.isPlaying && audioNarrationMode === "quick" ? "Listening..." : "Listen Aloud"}</span>
+                </button>
               </div>
               <ul className="space-y-3">
                 {displayQuickBullets.map((bullet, idx) => (
@@ -436,8 +934,19 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
           {/* TAB 2: EASY SUMMARY (100-150 words) */}
           {activeTab === "easy" && (
             <div className="space-y-4">
-              <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-900/30 dark:bg-blue-950/30 dark:text-blue-300">
-                📖 <strong>Easy Summary</strong> — Written in plain, accessible language without jargon for quick digestion.
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-900/30 dark:bg-blue-950/30 dark:text-blue-300">
+                <div>
+                  📖 <strong>Easy Summary</strong> — Written in plain, accessible language without jargon for quick digestion.
+                </div>
+                <button
+                  id="tab-listen-easy-btn"
+                  onClick={() => handleListenToArticle("easy")}
+                  className="flex items-center gap-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600 hover:text-white px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 dark:hover:bg-blue-600 dark:hover:text-white transition"
+                  title="Listen to Easy Summary aloud"
+                >
+                  <Headphones className="h-3 w-3" />
+                  <span>{speech.isPlaying && audioNarrationMode === "easy" ? "Listening..." : "Listen Aloud"}</span>
+                </button>
               </div>
               <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/50 p-5 text-sm text-neutral-800 shadow-2xs dark:border-neutral-800 dark:bg-neutral-800/30 dark:text-neutral-200 leading-relaxed sm:text-base">
                 {displayEasy}
@@ -448,8 +957,19 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
           {/* TAB 3: DETAILED SUMMARY (300-500 words) */}
           {activeTab === "detailed" && (
             <div className="space-y-4">
-              <div className="rounded-xl border border-purple-100 bg-purple-50/50 p-3 text-xs text-purple-800 dark:border-purple-900/30 dark:bg-purple-950/30 dark:text-purple-300">
-                🔍 <strong>Detailed Summary</strong> — In-depth analysis covering historical context, core data, and future implications.
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-purple-100 bg-purple-50/50 p-3 text-xs text-purple-800 dark:border-purple-900/30 dark:bg-purple-950/30 dark:text-purple-300">
+                <div>
+                  🔍 <strong>Detailed Summary</strong> — In-depth analysis covering historical context, core data, and future implications.
+                </div>
+                <button
+                  id="tab-listen-detailed-btn"
+                  onClick={() => handleListenToArticle("detailed")}
+                  className="flex items-center gap-1.5 rounded-lg bg-purple-600/10 hover:bg-purple-600 hover:text-white px-2.5 py-1 text-xs font-semibold text-purple-700 dark:text-purple-300 dark:hover:bg-purple-600 dark:hover:text-white transition"
+                  title="Listen to Detailed Summary aloud"
+                >
+                  <Headphones className="h-3 w-3" />
+                  <span>{speech.isPlaying && audioNarrationMode === "detailed" ? "Listening..." : "Listen Aloud"}</span>
+                </button>
               </div>
               <div className="prose dark:prose-invert max-w-none rounded-2xl border border-neutral-200/80 bg-neutral-50/40 p-5 text-sm text-neutral-800 dark:border-neutral-800 dark:bg-neutral-800/30 dark:text-neutral-200 leading-relaxed whitespace-pre-line">
                 {displayDetailed}
@@ -632,8 +1152,8 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
                 {isChatLoading && (
                   <div className="flex justify-start">
                     <div className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white p-3 text-xs text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-500" />
-                      <span>SummaryHub AI is analyzing...</span>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
+                      <span>The World Ledger Intelligence Desk is analyzing...</span>
                     </div>
                   </div>
                 )}
@@ -784,12 +1304,17 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
 
                 <div className="text-right">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    Truth Score
+                    Authenticity Rating
                   </span>
                   <div className="text-2xl font-black text-emerald-700 dark:text-emerald-300">
                     {summary.verification?.verificationScore || 98}%
                   </div>
                 </div>
+              </div>
+
+              {/* Source Authenticity vs Factual Accuracy Distinction Note */}
+              <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/50 p-3 text-xs leading-relaxed text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-200">
+                <strong>Source Authenticity & Wire Corroboration:</strong> This rating measures whether the dispatch originates from an accredited, verified publisher feed with matching timestamped wire records. It evaluates publisher authenticity and absence of synthetic distortion, rather than claiming infallible certainty over complex evolving events.
               </div>
 
               {/* Fact-Check Summary */}
@@ -875,6 +1400,37 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({
               </div>
             </div>
           )}
+        </div>
+
+        {/* Modal Bottom Sticky Navigation Bar */}
+        <div className="flex items-center justify-between border-t border-neutral-200/80 bg-neutral-50/80 px-4 py-2.5 sm:px-5 sm:py-3 backdrop-blur-xs dark:border-neutral-800 dark:bg-neutral-900/90 shrink-0">
+          <button
+            id="modal-bottom-back-btn"
+            onClick={() => {
+              speech.stop();
+              AiService.stopSpeaking();
+              onClose();
+            }}
+            className="flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-neutral-700 shadow-2xs hover:bg-neutral-100 hover:text-neutral-900 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 transition"
+            title="Back to previous page (Esc)"
+          >
+            <ArrowLeft className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <span>Back to News Feed</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              id="modal-bottom-close-btn"
+              onClick={() => {
+                speech.stop();
+                AiService.stopSpeaking();
+                onClose();
+              }}
+              className="rounded-xl px-3 py-1.5 text-xs font-medium text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-white transition"
+            >
+              Cancel / Close
+            </button>
+          </div>
         </div>
       </div>
     </div>

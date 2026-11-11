@@ -95,7 +95,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       bio: newCreatorBio.trim() || "Independent curated channel for concise analysis.",
       followersCount: "10K+",
       isFollowed: true,
-      channelUrl: newCreatorUrl.trim() || "https://summaryhub.internal",
+      channelUrl: newCreatorUrl.trim() || "https://worldledger.internal",
     };
     onAddCreator(newCreator);
     setNewCreatorName("");

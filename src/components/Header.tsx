@@ -19,9 +19,13 @@ import {
   RefreshCw,
   Smartphone,
   Instagram,
-  ExternalLink
+  ExternalLink,
+  Newspaper,
+  Clock,
+  Activity
 } from "lucide-react";
 import { Language, UserProfile, NotificationItem } from "../types";
+import { BrandLogo } from "./BrandLogo";
 
 interface HeaderProps {
   currentLanguage: Language;
@@ -31,6 +35,7 @@ interface HeaderProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onOpenSummarizeModal: () => void;
+  onOpenAddNewsModal?: () => void;
   notifications: NotificationItem[];
   onOpenNotifications: () => void;
   user: UserProfile;
@@ -41,6 +46,7 @@ interface HeaderProps {
   onTriggerAutoFetch?: () => void;
   isFetchingVerified?: boolean;
   onOpenPlayStoreModal?: () => void;
+  onOpenFreshnessMonitor?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -51,6 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
   onOpenSummarizeModal,
+  onOpenAddNewsModal,
   notifications,
   onOpenNotifications,
   user,
@@ -61,9 +68,11 @@ export const Header: React.FC<HeaderProps> = ({
   onTriggerAutoFetch,
   isFetchingVerified = false,
   onOpenPlayStoreModal,
+  onOpenFreshnessMonitor,
 }) => {
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -75,14 +84,14 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-neutral-200 bg-white/95 backdrop-blur-md transition-colors dark:border-neutral-800 dark:bg-neutral-900/95">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-2.5 sm:px-6 lg:px-8">
         {/* Left: Mobile Toggle & Brand */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             id="mobile-sidebar-toggle-btn"
             onClick={onToggleSidebar}
             aria-label="Toggle navigation menu"
-            className="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800 md:hidden"
+            className="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800 md:hidden shrink-0"
           >
             {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -90,31 +99,15 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="header-brand-logo-btn"
             onClick={() => onNavigate("feed")}
-            className="group flex items-center gap-2.5 text-left focus:outline-none"
+            className="group flex items-center text-left focus:outline-none shrink-0"
+            aria-label="The World Ledger Home"
           >
-            <img
-              src="/icon.svg"
-              alt="SummaryHub Logo"
-              className="h-9 w-9 rounded-xl object-contain shadow-sm shadow-indigo-500/25 transition-transform group-hover:scale-105"
-            />
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
-                  Summary<span className="text-indigo-600 dark:text-indigo-400">Hub</span>
-                </span>
-                <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
-                  AI
-                </span>
-              </div>
-              <p className="text-[10px] sm:text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
-                create by Sarfaraz Shah
-              </p>
-            </div>
+            <BrandLogo variant="full" showTagline={true} />
           </button>
         </div>
 
-        {/* Center: Search Bar */}
-        <div className="mx-4 hidden max-w-md flex-1 md:block">
+        {/* Center: Search Bar (Desktop & Tablet md+) */}
+        <div className="mx-3 hidden max-w-md flex-1 md:block">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
             <input
@@ -137,18 +130,43 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Mobile Search Toggle (Visible on screens <md) */}
+          <button
+            id="header-mobile-search-toggle-btn"
+            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+            aria-label="Toggle search input"
+            className={`flex items-center justify-center rounded-lg p-2 text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 md:hidden ${
+              isMobileSearchOpen ? "bg-neutral-100 text-indigo-600 dark:bg-neutral-800 dark:text-indigo-400" : ""
+            }`}
+            title="Search news"
+          >
+            <Search className="h-4 w-4" />
+          </button>
           {/* Play Store & Android App Modal Trigger */}
           {onOpenPlayStoreModal && (
             <button
               id="header-playstore-btn"
               onClick={onOpenPlayStoreModal}
-              className="flex items-center gap-1.5 rounded-xl border border-indigo-200/80 bg-indigo-50/70 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 hover:border-indigo-300 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-300 sm:px-3 sm:py-2"
+              className="hidden xl:flex shrink-0 items-center gap-1.5 rounded-xl border border-indigo-200/80 bg-indigo-50/70 px-2.5 py-1.5 text-xs font-semibold whitespace-nowrap text-indigo-700 transition hover:bg-indigo-100 hover:border-indigo-300 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-300"
               title="Publish to Google Play Store & Install on Android"
             >
-              <Smartphone className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span className="hidden sm:inline">Play Store / App</span>
-              <span className="sm:hidden">App</span>
+              <Smartphone className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span>Play Store / App</span>
+            </button>
+          )}
+
+          {/* News Freshness & Ingestion Pipeline Health Monitor */}
+          {onOpenFreshnessMonitor && (
+            <button
+              id="header-freshness-monitor-btn"
+              onClick={onOpenFreshnessMonitor}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg sm:rounded-xl border border-sky-200/80 bg-sky-50/80 px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-semibold text-sky-800 transition hover:bg-sky-100 hover:border-sky-300 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300"
+              title="News Ingestion Pipeline Health & Live Feed Monitor"
+            >
+              <Activity className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400 shrink-0 animate-pulse" />
+              <span className="hidden lg:inline">Feed Monitor</span>
+              <span className="hidden sm:inline lg:hidden">Live</span>
             </button>
           )}
 
@@ -166,29 +184,55 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Support or Report - Sarfaraz Shah Instagram */}
+          {/* Support or Report - Sarfaraz Shah Instagram (Prominent on Tablet/Desktop; accessible via sidebar on mobile) */}
           <a
             id="header-support-report-btn"
             href="https://www.instagram.com/horizonseer._?stkn=amlld3BudWdwa2l0"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-xl border border-rose-200/80 bg-rose-50/70 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 hover:border-rose-300 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 sm:px-3 sm:py-2"
+            className="hidden sm:flex items-center gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl border border-rose-200/80 bg-rose-50/70 px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 hover:border-rose-300 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
             title="Support or Report - Contact Sarfaraz Shah on Instagram (@horizonseer._)"
           >
-            <Instagram className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+            <Instagram className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
             <span className="hidden xl:inline">Support or Report</span>
-            <span className="xl:hidden hidden sm:inline">Support</span>
+            <span className="xl:hidden">Support</span>
           </a>
 
-          {/* Quick Summarize URL button */}
+          {/* Dedicated Add News / Ingest Live News button */}
+          {onOpenAddNewsModal && (
+            <button
+              id="header-add-news-btn"
+              onClick={onOpenAddNewsModal}
+              className="flex items-center gap-1 rounded-lg sm:rounded-xl bg-indigo-600 px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-bold text-white shadow-sm shadow-indigo-600/25 transition-all hover:bg-indigo-700 hover:shadow-indigo-600/35 active:scale-95 shrink-0"
+              title="Add News Article or Ingest Live Breaking News"
+            >
+              <Newspaper className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="hidden sm:inline">Add News</span>
+            </button>
+          )}
+
+          {/* Quick Summarize URL button (Desktop & Tablet; on Mobile accessible in Drawer and bottom/fab) */}
           <button
             id="header-summarize-url-btn"
             onClick={onOpenSummarizeModal}
-            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-indigo-600/30 active:scale-95 sm:px-3.5 sm:py-2 sm:text-sm"
+            className="hidden sm:flex items-center gap-1 rounded-lg sm:rounded-xl border border-neutral-200 bg-neutral-50 px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-semibold text-neutral-700 transition-all hover:bg-neutral-100 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 shrink-0"
+            title="Summarize YouTube, X, or web link"
           >
-            <PlusCircle className="h-4 w-4" />
-            <span className="hidden sm:inline">Summarize Link</span>
-            <span className="sm:hidden">Add</span>
+            <PlusCircle className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden md:inline">Summarize Link</span>
+            <span className="md:hidden">Link</span>
+          </button>
+
+          {/* Website Ownership Portal Trigger */}
+          <button
+            id="header-ownership-portal-btn"
+            onClick={() => onNavigate("owner-dashboard")}
+            title="Website Ownership Management & Transfer Portal"
+            className="flex items-center gap-1.5 rounded-lg sm:rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50 to-amber-100/60 px-2 sm:px-2.5 py-1 sm:py-1.5 text-xs font-medium text-amber-950 shadow-sm transition-all hover:from-amber-100 hover:to-amber-200/80 active:scale-95 dark:border-amber-700/60 dark:from-amber-950/40 dark:to-amber-900/40 dark:text-amber-200 shrink-0"
+          >
+            <ShieldCheck className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400 shrink-0" />
+            <span className="hidden sm:inline font-serif-title font-semibold">Ownership</span>
+            <span className="sm:hidden font-serif-title font-semibold">Owner</span>
           </button>
 
           {/* Reading Streak Indicator */}
@@ -310,6 +354,16 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
                   <button
                     onClick={() => {
+                      onNavigate("read-later");
+                      setIsUserMenuOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/50"
+                  >
+                    <Clock className="h-4 w-4 text-violet-500" />
+                    <span>Read Later Queue</span>
+                  </button>
+                  <button
+                    onClick={() => {
                       onNavigate("saved");
                       setIsUserMenuOpen(false);
                     }}
@@ -317,6 +371,22 @@ export const Header: React.FC<HeaderProps> = ({
                   >
                     <Bookmark className="h-4 w-4 text-neutral-400" />
                     <span>Saved Summaries</span>
+                  </button>
+                  <button
+                    id="user-menu-ownership-portal-btn"
+                    onClick={() => {
+                      onNavigate("owner-dashboard");
+                      setIsUserMenuOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-700/50"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <ShieldCheck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      <span>Ownership Portal</span>
+                    </span>
+                    <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                      Gov
+                    </span>
                   </button>
                   <button
                     onClick={() => {
@@ -362,19 +432,30 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Mobile Search Bar Row */}
-      <div className="border-t border-neutral-100 px-4 py-2 dark:border-neutral-800 md:hidden">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search topics, creators, news..."
-            className="w-full rounded-lg border border-neutral-200 bg-neutral-50 py-1.5 pl-9 pr-8 text-xs text-neutral-900 placeholder-neutral-400 focus:border-indigo-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-          />
+      {/* Mobile Search Bar Row (Toggled on demand or when search is active) */}
+      {(isMobileSearchOpen || searchQuery) && (
+        <div className="border-t border-neutral-100 px-3 py-2 dark:border-neutral-800 md:hidden bg-neutral-50/95 dark:bg-neutral-900/95 backdrop-blur-md animate-fadeIn">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              autoFocus={isMobileSearchOpen}
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search topics, creators, news..."
+              className="w-full rounded-lg border border-neutral-200 bg-white py-1.5 pl-9 pr-8 text-xs text-neutral-900 placeholder-neutral-400 focus:border-indigo-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </header>
   );
 };

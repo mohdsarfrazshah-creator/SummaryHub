@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { SummaryItem } from "../types";
+import { GoogleIcon } from "./VerificationBadge";
 
 interface VerificationAuditModalProps {
   summary: SummaryItem | null;
@@ -26,9 +27,9 @@ export const VerificationAuditModal: React.FC<VerificationAuditModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  if (!isOpen || !summary) return null;
-
   const [copied, setCopied] = useState(false);
+
+  if (!isOpen || !summary) return null;
   const verification = summary.verification || {
     isVerified: true,
     verificationScore: 98,
@@ -48,7 +49,7 @@ export const VerificationAuditModal: React.FC<VerificationAuditModalProps> = ({
   };
 
   const handleCopyCertificate = () => {
-    const text = `SUMMARYHUB VERIFICATION CERTIFICATE
+    const text = `THE WORLD LEDGER VERIFICATION CERTIFICATE
 Content: "${summary.title}"
 Reference ID: ${verification.sourceReferenceId || "REF-" + summary.id}
 Credibility Score: ${verification.verificationScore}/100
@@ -113,14 +114,14 @@ Original URL: ${summary.originalUrl}`;
           <div className="flex items-center justify-between rounded-2xl border border-emerald-200/70 bg-emerald-50/50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                Authenticity & Reliability Score
+                Source Authenticity Rating
               </span>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-emerald-700 dark:text-emerald-400">
                   {verification.verificationScore}%
                 </span>
                 <span className="text-xs font-medium text-emerald-600/80 dark:text-emerald-400/80">
-                  Highest Editorial Confidence
+                  Editorial Provenance Verified
                 </span>
               </div>
             </div>
@@ -128,6 +129,11 @@ Original URL: ${summary.originalUrl}`;
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300 bg-white shadow-2xs dark:border-emerald-800 dark:bg-neutral-850">
               <Award className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
             </div>
+          </div>
+
+          {/* Editorial Transparency & Distinction Box */}
+          <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/50 p-3 text-xs leading-relaxed text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-200">
+            <strong>Source Authenticity vs. Factual Accuracy:</strong> This rating evaluates source credentials, timestamped wire correlation, and editorial provenance. It verifies publisher authenticity and absence of synthetic alterations, which is distinct from guaranteeing absolute real-world claim finality.
           </div>
 
           {/* Article Under Audit */}
@@ -163,6 +169,54 @@ Original URL: ${summary.originalUrl}`;
               {verification.factCheckSummary}
             </p>
           </div>
+
+          {/* Google Verified Sources Card with Live Links */}
+          {verification.googleVerifiedSources && verification.googleVerifiedSources.length > 0 && (
+            <div className="rounded-2xl border border-blue-200/90 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <GoogleIcon className="h-4 w-4" />
+                  <span className="text-xs font-bold text-blue-950 dark:text-blue-200">
+                    Google Search Grounding Citations
+                  </span>
+                </div>
+                <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:bg-blue-900/60 dark:text-blue-200">
+                  Live Web Grounded
+                </span>
+              </div>
+
+              <p className="mt-1.5 text-[11px] text-blue-800/80 dark:text-blue-300/80">
+                Verified using Google Search Grounding with Gemini 3.5 Flash. The following primary web references corroborated this story:
+              </p>
+
+              <div className="mt-3 space-y-2">
+                {verification.googleVerifiedSources.map((source, idx) => (
+                  <a
+                    key={idx}
+                    href={source.uri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-2 rounded-xl border border-blue-200/70 bg-white p-2.5 text-xs font-medium text-blue-950 transition hover:border-blue-400 hover:bg-blue-50/50 dark:border-blue-800/60 dark:bg-neutral-900 dark:text-blue-200 dark:hover:bg-blue-950/40"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-blue-100 text-[10px] font-bold text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        {idx + 1}
+                      </span>
+                      <span className="truncate">{source.title || "Google Search Verified Link"}</span>
+                    </div>
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+                  </a>
+                ))}
+              </div>
+
+              {verification.googleSearchQueries && verification.googleSearchQueries.length > 0 && (
+                <div className="mt-3 pt-2.5 border-t border-blue-200/60 text-[10px] text-blue-700 dark:border-blue-800/50 dark:text-blue-400">
+                  <span className="font-semibold">Search Grounding Queries: </span>
+                  <span>{verification.googleSearchQueries.join(" • ")}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Primary Source Records */}
           <div>

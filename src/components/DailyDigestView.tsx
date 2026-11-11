@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { DailyDigest, SummaryItem, Language } from "../types";
 import { AiService } from "../services/aiService";
+import { getTopicImageUrl } from "../utils/topicImageMatcher";
 
 interface DailyDigestViewProps {
   digest: DailyDigest;
@@ -39,9 +40,12 @@ export const DailyDigestView: React.FC<DailyDigestViewProps> = ({
   const [expandedSummaryId, setExpandedSummaryId] = useState<string | null>(null);
 
   // Filter top summaries matching digest.topSummaryIds or fallbacks
-  const topSummaries = summaries
-    .filter((s) => digest.topSummaryIds.includes(s.id) || summaries.indexOf(s) < 10)
-    .slice(0, 10);
+  const topSummaries = React.useMemo(() => {
+    const idSet = new Set(digest.topSummaryIds || []);
+    const matched = summaries.filter((s) => idSet.has(s.id));
+    if (matched.length >= 5) return matched.slice(0, 10);
+    return summaries.slice(0, 10);
+  }, [summaries, digest.topSummaryIds]);
 
   const handleToggleAudio = () => {
     if (isPlayingAudio) {
@@ -49,7 +53,7 @@ export const DailyDigestView: React.FC<DailyDigestViewProps> = ({
       setIsPlayingAudio(false);
     } else {
       setIsPlayingAudio(true);
-      const textToSpeak = `SummaryHub Daily Digest for ${new Date(digest.date).toLocaleDateString()}. ${digest.briefingHeadline}. Executive Overview: ${digest.executiveOverview}. Key Takeaways: ${digest.keyTakeaways.join(". ")}`;
+      const textToSpeak = `The World Ledger Daily Executive Digest for ${new Date(digest.date).toLocaleDateString()}. ${digest.briefingHeadline}. Executive Overview: ${digest.executiveOverview}. Key Takeaways: ${digest.keyTakeaways.join(". ")}`;
       AiService.speak(textToSpeak, currentLanguage, () => setIsPlayingAudio(false));
     }
   };
@@ -218,13 +222,45 @@ export const DailyDigestView: React.FC<DailyDigestViewProps> = ({
                 {/* Accordion Expanded Preview */}
                 {isExpanded && (
                   <div className="border-t border-neutral-100 bg-neutral-50/60 p-4 dark:border-neutral-800 dark:bg-neutral-850">
-                    <div className="space-y-1.5 text-xs text-neutral-700 dark:text-neutral-300">
-                      {item.quickSummary.map((b, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                          <p>{b}</p>
-                        </div>
-                      ))}
+                    <div className="flex flex-col sm:flex-row gap-4 mb-3">
+                      {(() => {
+                        const itemImg = item.thumbnailUrl?.trim() || getTopicImageUrl({
+                          title: item.title,
+                          category: item.category,
+                          currentAffairsCategory: item.currentAffairsCategory,
+                          id: item.id,
+                        });
+                        return (
+                          <div className="relative aspect-video w-full sm:w-40 shrink-0 overflow-hidden rounded-xl border border-neutral-200/80 bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800">
+                            <img
+                              src={itemImg}
+                              alt={item.title}
+                              referrerPolicy="no-referrer"
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                const target = e.currentTarget as HTMLImageElement;
+                                const fallback = getTopicImageUrl({
+                                  title: item.title,
+                                  category: item.category,
+                                  id: `fallback-${item.id}`,
+                                });
+                                if (target.src !== fallback) {
+                                  target.src = fallback;
+                                }
+                              }}
+                            />
+                          </div>
+                        );
+                      })()}
+                      <div className="flex-1 space-y-1.5 text-xs text-neutral-700 dark:text-neutral-300">
+                        {item.quickSummary.map((b, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
+                            <p>{b}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="mt-3 flex items-center justify-between pt-2 border-t border-neutral-200/60 dark:border-neutral-700/60">

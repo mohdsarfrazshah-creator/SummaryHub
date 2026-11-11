@@ -1,18 +1,24 @@
 {
   "id": "/",
-  "name": "SummaryHub - AI News & Content Summarizer",
-  "short_name": "SummaryHub",
-  "description": "AI-powered verified news, current affairs briefings, and multi-tier summaries for YouTube, X, and articles.",
+  "name": "The World Ledger — Global News & Intelligence",
+  "short_name": "World Ledger",
+  "description": "Understand the news behind the headlines. Authoritative global journalism, fact-checked breaking dispatches, and multi-tier executive summaries.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#4f46e5",
-  "background_color": "#0f172a",
+  "theme_color": "#0B132B",
+  "background_color": "#0B132B",
   "categories": ["news", "education", "productivity"],
   "lang": "en",
   "dir": "auto",
   "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/pwa-192x192.png",
       "sizes": "192x192",

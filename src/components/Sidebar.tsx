@@ -14,18 +14,25 @@ import {
   ChevronRight,
   Smartphone,
   Instagram,
-  X
+  Newspaper,
+  Plus,
+  X,
+  ShieldCheck,
+  Award
 } from "lucide-react";
 import { UserProfile } from "../types";
+import { BrandLogo } from "./BrandLogo";
 
 interface SidebarProps {
   currentView: string;
   onNavigate: (view: string) => void;
   user: UserProfile;
   savedCount: number;
+  readLaterCount?: number;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   onOpenSummarizeModal: () => void;
+  onOpenAddNewsModal?: () => void;
   onOpenPlayStoreModal?: () => void;
 }
 
@@ -34,9 +41,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   user,
   savedCount,
+  readLaterCount = 0,
   isOpenMobile,
   onCloseMobile,
   onOpenSummarizeModal,
+  onOpenAddNewsModal,
   onOpenPlayStoreModal,
 }) => {
   const navItems = [
@@ -66,6 +75,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Compass,
     },
     {
+      id: "read-later",
+      label: "Read Later",
+      icon: Clock,
+      count: readLaterCount,
+      badge: "7d Queue",
+      badgeColor: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20",
+    },
+    {
       id: "saved",
       label: "Saved Summaries",
       icon: Bookmark,
@@ -77,13 +94,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: LayoutDashboard,
     },
     {
+      id: "owner-dashboard",
+      label: "Ownership Portal",
+      icon: ShieldCheck,
+      badge: "Gov",
+      badgeColor: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30",
+    },
+    {
       id: "settings",
       label: "Settings",
       icon: Settings,
     },
     {
       id: "landing",
-      label: "Product Overview",
+      label: "Publication Overview",
       icon: Globe2,
     },
   ];
@@ -92,6 +116,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onNavigate(id);
     onCloseMobile();
   };
+
+  // Close drawer on Escape key and prevent background scrolling while drawer is open on mobile
+  React.useEffect(() => {
+    if (!isOpenMobile) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCloseMobile();
+      }
+    };
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpenMobile, onCloseMobile]);
 
   return (
     <>
@@ -105,38 +146,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-neutral-200 bg-white transition-transform duration-200 ease-in-out dark:border-neutral-800 dark:bg-neutral-900 md:static md:z-10 md:translate-x-0 ${
-          isOpenMobile ? "translate-x-0" : "-translate-x-full"
+        role={isOpenMobile ? "dialog" : undefined}
+        aria-modal={isOpenMobile ? true : undefined}
+        aria-label="Navigation menu"
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] md:w-64 lg:w-72 flex-col border-r border-neutral-200 bg-white transition-transform duration-200 ease-in-out dark:border-neutral-800 dark:bg-neutral-900 md:static md:z-10 md:translate-x-0 ${
+          isOpenMobile ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         }`}
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between border-b border-neutral-100 p-4 dark:border-neutral-800">
+        <div className="flex shrink-0 items-center justify-between border-b border-neutral-100 p-4 dark:border-neutral-800">
           <div 
             onClick={() => handleItemClick("feed")}
-            className="flex cursor-pointer items-center gap-2.5"
+            className="group flex cursor-pointer items-center"
           >
-            <img
-              src="/icon.svg"
-              alt="SummaryHub Logo"
-              className="h-8 w-8 rounded-xl object-contain shadow-xs shadow-indigo-500/20"
-            />
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-base font-bold text-neutral-900 dark:text-white">
-                  Summary<span className="text-indigo-600 dark:text-indigo-400">Hub</span>
-                </span>
-                <span className="rounded-full bg-indigo-50 px-1 py-0.2 text-[9px] font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                  AI
-                </span>
-              </div>
-              <p className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
-                create by Sarfaraz Shah
-              </p>
-            </div>
+            <BrandLogo variant="compact" showTagline={true} />
           </div>
           {isOpenMobile && (
             <button
               onClick={onCloseMobile}
+              aria-label="Close navigation menu"
               className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 md:hidden"
             >
               <X className="h-4 w-4" />
@@ -144,8 +172,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* Navigation List */}
-        <div className="flex-1 overflow-y-auto px-3 py-4">
+        {/* Navigation List - Independently Scrollable with Generous Bottom Padding */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4 pb-10 overscroll-contain">
           <div className="mb-2 px-3 text-[11px] font-semibold tracking-wider text-neutral-400 uppercase dark:text-neutral-500">
             Navigation
           </div>
@@ -190,22 +218,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="mt-6 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/70 to-violet-50/70 p-4 dark:border-indigo-900/30 dark:from-indigo-950/30 dark:to-violet-950/20">
             <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
               <Sparkles className="h-4 w-4" />
-              <span className="text-xs font-bold tracking-tight uppercase">AI Summarizer</span>
+              <span className="text-xs font-bold tracking-tight uppercase">AI Content Hub</span>
             </div>
             <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed">
-              Have a long YouTube video, X thread, or news article?
+              Ingest live breaking wire feeds or summarize any video / article.
             </p>
-            <button
-              id="sidebar-quick-summarize-btn"
-              onClick={() => {
-                onOpenSummarizeModal();
-                onCloseMobile();
-              }}
-              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-indigo-700"
-            >
-              <span>Summarize Any URL</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+
+            <div className="mt-3 space-y-2">
+              {onOpenAddNewsModal && (
+                <button
+                  id="sidebar-add-news-btn"
+                  onClick={() => {
+                    onOpenAddNewsModal();
+                    onCloseMobile();
+                  }}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-indigo-700"
+                >
+                  <Newspaper className="h-3.5 w-3.5" />
+                  <span>Add News / Live Wires</span>
+                </button>
+              )}
+
+              <button
+                id="sidebar-quick-summarize-btn"
+                onClick={() => {
+                  onOpenSummarizeModal();
+                  onCloseMobile();
+                }}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-white/80 py-2 text-xs font-semibold text-indigo-700 shadow-2xs transition hover:bg-white dark:border-indigo-800 dark:bg-neutral-850 dark:text-indigo-300 dark:hover:bg-neutral-800"
+              >
+                <span>Summarize Any URL</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* Play Store & Mobile App Banner */}
@@ -269,8 +314,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Bottom User Info */}
-        <div className="border-t border-neutral-200 p-3 dark:border-neutral-800">
+        {/* Bottom User Info - Always Accessible and Pinned */}
+        <div className="shrink-0 border-t border-neutral-200 bg-white/95 p-3 dark:border-neutral-800 dark:bg-neutral-900/95 backdrop-blur-xs">
           <div 
             onClick={() => handleItemClick("dashboard")}
             className="flex cursor-pointer items-center gap-3 rounded-xl p-2 transition hover:bg-neutral-100 dark:hover:bg-neutral-800/60"

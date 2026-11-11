@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Platform, Category, Language, SummaryItem } from "../types";
 import { AiService } from "../services/aiService";
+import { getTopicImageUrl } from "../utils/topicImageMatcher";
 
 interface SummarizeUrlModalProps {
   isOpen: boolean;
@@ -29,8 +30,6 @@ export const SummarizeUrlModal: React.FC<SummarizeUrlModalProps> = ({
   onAddSummary,
   currentLanguage,
 }) => {
-  if (!isOpen) return null;
-
   const [mode, setMode] = useState<"url" | "text">("url");
   const [urlInput, setUrlInput] = useState("");
   const [titleInput, setTitleInput] = useState("");
@@ -41,6 +40,8 @@ export const SummarizeUrlModal: React.FC<SummarizeUrlModalProps> = ({
   const [selectedLanguage, setSelectedLanguage] = useState<Language>(currentLanguage);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
 
   // Auto detect platform from URL
   const handleUrlChange = (url: string) => {
@@ -84,7 +85,7 @@ export const SummarizeUrlModal: React.FC<SummarizeUrlModalProps> = ({
       const result = await AiService.summarize({
         title: titleInput || (mode === "url" ? "Content Update" : "Pasted Article"),
         content: contentInput || urlInput,
-        url: urlInput || "https://summaryhub.internal/custom-text",
+        url: urlInput || "https://worldledger.internal/custom-text",
         platform,
         creator: creatorInput || "Verified Source",
         language: selectedLanguage,
@@ -102,7 +103,16 @@ export const SummarizeUrlModal: React.FC<SummarizeUrlModalProps> = ({
         publishDate: new Date().toISOString(),
         readingTimeMinutes: result.estimatedReadingTime || 2,
         originalUrl: urlInput || "#",
-        thumbnailUrl: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80",
+        thumbnailUrl: (result as any).featuredImageUrl || getTopicImageUrl({
+          title: titleInput || (result as any).title || urlInput,
+          category,
+          content: result.detailedSummary || contentInput,
+          id: `custom-summary-${Date.now()}`
+        }),
+        imageSource: (result as any).featuredImageUrl ? "publisher" : "provider",
+        imageType: (result as any).featuredImageUrl ? "photo" : "illustration",
+        imageCaption: (result as any).featuredImageUrl ? `Original photo for "${titleInput}"` : `Contextual topic illustration`,
+        imageAttribution: (result as any).featuredImageUrl ? (creatorInput ? `Source: ${creatorInput}` : "Original Publisher Wire") : "The World Ledger Editorial Collection",
         quickSummary: result.quickSummary,
         easySummary: result.easySummary,
         detailedSummary: result.detailedSummary,

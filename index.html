@@ -1,28 +1,52 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="w-full overflow-x-hidden">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SummaryHub - AI-Powered Content Aggregator & Summaries</title>
-    <meta name="description" content="AI-powered content aggregation and multi-tier summarization platform for YouTube, X, Instagram, and news sources." />
-    <meta property="og:title" content="SummaryHub - AI-Powered Content Aggregator & Summaries" />
-    <meta property="og:description" content="AI-powered content aggregation and multi-tier summarization platform for YouTube, X, Instagram, and news sources." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    <title>The World Ledger — Understand the News Behind the Headlines</title>
+    <meta name="description" content="Understand the news behind the headlines. The World Ledger delivers authoritative global journalism, verified breaking dispatches, and multi-tier executive summaries." />
+    <meta property="og:title" content="The World Ledger — Understand the News Behind the Headlines" />
+    <meta property="og:description" content="Understand the news behind the headlines. The World Ledger delivers authoritative global journalism, verified breaking dispatches, and multi-tier executive summaries." />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="The World Ledger" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="The World Ledger — Understand the News Behind the Headlines" />
+    <meta name="twitter:description" content="Understand the news behind the headlines. The World Ledger delivers authoritative global journalism, verified breaking dispatches, and multi-tier executive summaries." />
+    <meta name="author" content="Sarfaraz Shah" />
+    
+    <!-- Schema.org NewsMediaOrganization & WebApplication structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "NewsMediaOrganization",
+      "name": "The World Ledger",
+      "alternateName": "World Ledger",
+      "slogan": "Understand the News Behind the Headlines.",
+      "url": "https://worldledger.news",
+      "logo": "/icon.svg",
+      "description": "Understand the news behind the headlines. The World Ledger delivers authoritative global journalism, verified breaking dispatches, and multi-tier executive summaries.",
+      "publishingPrinciples": "https://worldledger.news/editorial-standards",
+      "founder": {
+        "@type": "Person",
+        "name": "Sarfaraz Shah"
+      }
+    }
+    </script>
     
     <!-- PWA & Mobile App Support for Android / Google Play -->
     <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="alternate icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#4f46e5" />
+    <meta name="theme-color" content="#0B132B" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="SummaryHub" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="The World Ledger" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
   </head>
   <body class="bg-neutral-50 text-neutral-900 antialiased selection:bg-indigo-500 selection:text-white">
     <div id="root"></div>

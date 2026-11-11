@@ -31,6 +31,11 @@ export interface KeyFacts {
   decisions: string[];
 }
 
+export interface GoogleVerifiedSourceItem {
+  title: string;
+  uri: string;
+}
+
 export interface VerificationData {
   isVerified: boolean;
   verificationScore: number; // e.g. 98 out of 100
@@ -38,9 +43,12 @@ export interface VerificationData {
   verifiedSources: string[]; // e.g. ["Press Information Bureau (PIB)", "Reuters Wire", "Official Gazette"]
   factCheckSummary: string; // concise explanation of how info was authenticated
   verifiedTimestamp: string;
-  primarySourceType: "Government Gazette" | "Official Wire" | "Peer-Reviewed" | "Institutional Dispatch" | "Direct Statement";
+  primarySourceType: "Government Gazette" | "Official Wire" | "Peer-Reviewed" | "Institutional Dispatch" | "Direct Statement" | "Google Verified Source";
   checksPassed: string[];
   sourceReferenceId?: string;
+  isGoogleVerified?: boolean;
+  googleVerifiedSources?: GoogleVerifiedSourceItem[];
+  googleSearchQueries?: string[];
 }
 
 export interface SummaryItem {
@@ -53,10 +61,35 @@ export interface SummaryItem {
   platform: Platform;
   category: Category;
   currentAffairsCategory?: CurrentAffairsSubCategory;
-  publishDate: string; // ISO string or human date
+  publishDate: string; // ISO string or human date (maintained for backward compatibility)
+  publishedAt?: string; // ISO 8601 UTC timestamp of original publication
+  sourceUpdatedAt?: string; // Verified update time from the original publisher
+  updatedAt?: string; // ISO 8601 UTC timestamp when original source was updated
+  firstSeenAt?: string; // ISO 8601 UTC timestamp when The World Ledger discovered article
+  lastFetchedAt?: string; // ISO 8601 UTC timestamp when system last checked the source
+  lastCheckedAt?: string; // ISO 8601 UTC timestamp of last source poll/check
+  contentChangedAt?: string; // ISO 8601 UTC timestamp when meaningful article-content change was detected
+  lastContentChangeAt?: string; // ISO 8601 UTC timestamp when substantive content changed
+  contentHash?: string; // Deterministic hash of article content/title for update detection
+  isUpdate?: boolean; // Flag indicating article has verified source updates
+  updateSummary?: string; // Description of verified update
+  author?: string; // Original article author if available
+  tags?: string[]; // Topical tags & keywords
+  status?: "active" | "archived"; // Article archival status
   readingTimeMinutes: number;
   originalUrl: string;
+  canonicalUrl?: string;
+  publisherId?: string;
+  description?: string;
   thumbnailUrl: string;
+  originalImageUrl?: string;
+  imageSource?: "publisher" | "provider" | "ai" | "fallback" | "custom";
+  imageType?: "photo" | "illustration" | "chart" | "fallback";
+  imageCaption?: string;
+  imageAttribution?: string;
+  imageValidationStatus?: "valid" | "fallback" | "invalid";
+  imagePrompt?: string;
+  imageStatus?: "ready" | "generating" | "failed";
   
   // Multi-tier Summaries
   quickSummary: string[]; // 3-5 bullet points
@@ -78,8 +111,22 @@ export interface SummaryItem {
   verification?: VerificationData;
   isSaved?: boolean;
   isRead?: boolean;
+  isReadLater?: boolean;
   viewsCount?: number;
   likesCount?: number;
+}
+
+export interface ReadLaterItem {
+  id: string; // references SummaryItem.id
+  addedAt: string; // ISO string when queued
+  isRead?: boolean; // marked as read within the queue
+  notes?: string;
+}
+
+export interface ReadLaterSettings {
+  autoCleanupEnabled: boolean; // default: true
+  cleanupDays: number; // default: 7
+  notifyBeforeCleanup?: boolean;
 }
 
 export interface Creator {
